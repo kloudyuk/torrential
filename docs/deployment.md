@@ -189,16 +189,17 @@ container remains exited.
 
 ## Versions, backup, and upgrades
 
-Images use patch-floating major/minor tags where the publisher provides them. Some
-publishers expose only full application-version tags; those services use the
-narrowest available stable tag without a digest. This accepts compatible patch or
-image rebuild updates while preventing automatic minor or major upgrades whenever
-the registry's tagging scheme permits it. Review minor and major version changes one
+Third-party images use patch-floating major/minor tags where the publisher provides
+them. Publishers that expose only full application-version tags use the narrowest
+available stable tag without a digest. Torrential's own bootstrap image is pinned to
+the exact release matching `compose.yaml`, so a repository update cannot accidentally
+run against a different bootstrap build. Review minor and major version changes one
 service at a time, validate the Compose topology and VPN failure boundary, run
-bootstrap tests, and record any manual migration requirement. Pull updated tags
-before starting when an image refresh is wanted:
+bootstrap tests, and record any manual migration requirement. Update the repository
+and pull images before applying an upgrade:
 
 ```sh
+git pull --ff-only
 docker compose pull
 docker compose up -d
 ```

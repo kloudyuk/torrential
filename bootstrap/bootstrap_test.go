@@ -39,6 +39,7 @@ func TestLoadConfigDefaults(t *testing.T) {
 	assertEqual(t, configuration.dashboardURL, "http://127.0.0.1")
 	assertEqual(t, configuration.plex.country, 46)
 	assertEqual(t, configuration.directories.transcode, "/data/transcode")
+	assertEqual(t, configuration.requestTimeout, 90*time.Second)
 	assertEqual(t, configuration.startupTimeout, 300*time.Second)
 }
 

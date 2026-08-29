@@ -65,7 +65,7 @@ func loadConfig(env environment) (config, error) {
 		return config{}, err
 	}
 
-	timeoutMS, err := envInteger(env, "BOOTSTRAP_REQUEST_TIMEOUT_MS", 15000, 1)
+	timeoutMS, err := envInteger(env, "BOOTSTRAP_REQUEST_TIMEOUT_MS", 90000, 1)
 	if err != nil {
 		return config{}, err
 	}

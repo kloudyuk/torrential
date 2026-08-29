@@ -79,11 +79,10 @@ docker compose -f compose.yaml -f compose.dev.yaml logs --follow bootstrap
 
 Release tags in `vMAJOR.MINOR.PATCH` form run
 `.github/workflows/publish-bootstrap.yaml`, which publishes multi-platform
-`linux/amd64` and `linux/arm64` images. Each build receives an immutable full-version
-tag such as `v0.2.1` and updates its patch-floating minor tag such as `v0.2`.
-`compose.yaml` references the minor tag, and the workflow verifies that relationship
-before publishing. Full-version release tags must not be reused; the workflow refuses
-to replace one that already exists.
+`linux/amd64` and `linux/arm64` images with an immutable full-version tag such as
+`v0.2.2`. `compose.yaml` references that exact tag, and the workflow verifies both
+bootstrap services before publishing. Release tags must not be reused; the workflow
+refuses to replace an image that already exists.
 
 The GHCR package is public so Torrential deployments can pull it anonymously. Preserve
 that visibility when changing package settings.

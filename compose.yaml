@@ -64,7 +64,7 @@ services:
 
   init:
     # One-shot filesystem initialization using Torrential bootstrap 0.2.
-    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.2
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.2.2
     restart: "no"
     user: "0:0"
     command: ["prepare"]
@@ -82,7 +82,7 @@ services:
 
   bootstrap:
     # One-shot configuration coordinator using Torrential bootstrap 0.2.
-    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.2
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.2.2
     restart: "no"
     user: "0:0"
     network_mode: "service:plex"
@@ -92,7 +92,7 @@ services:
       LOCALE: ${LOCALE:-en-GB}
       TORRENTIAL_HOST: ${TORRENTIAL_HOST:?Set TORRENTIAL_HOST to the Docker host LAN IP or local DNS name}
       DASHBOARD_PORT: ${DASHBOARD_PORT:-80}
-      BOOTSTRAP_REQUEST_TIMEOUT_MS: ${BOOTSTRAP_REQUEST_TIMEOUT_MS:-15000}
+      BOOTSTRAP_REQUEST_TIMEOUT_MS: ${BOOTSTRAP_REQUEST_TIMEOUT_MS:-90000}
       BOOTSTRAP_STARTUP_TIMEOUT_MS: ${BOOTSTRAP_STARTUP_TIMEOUT_MS:-300000}
       SONARR_URL: http://sonarr:8989
       RADARR_URL: http://radarr:7878

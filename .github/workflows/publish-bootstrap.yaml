@@ -25,19 +25,21 @@ jobs:
         working-directory: bootstrap
         run: go test -race ./...
 
-      - name: Resolve image tags
-        id: version
+      - name: Validate release tag
         run: |
           if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
             echo "release tag must use vMAJOR.MINOR.PATCH" >&2
             exit 1
           fi
-          version="${GITHUB_REF_NAME#v}"
-          echo "minor_tag=v${version%.*}" >> "${GITHUB_OUTPUT}"
 
       - name: Verify Compose references this release
         run: |
-          grep -F "image: ghcr.io/kloudyuk/torrential-bootstrap:${{ steps.version.outputs.minor_tag }}" compose.yaml
+          expected="image: ghcr.io/kloudyuk/torrential-bootstrap:${GITHUB_REF_NAME}"
+          count="$(grep -Fc "${expected}" compose.yaml)"
+          if [[ "${count}" -ne 2 ]]; then
+            echo "compose.yaml must reference ${GITHUB_REF_NAME} for both bootstrap services" >&2
+            exit 1
+          fi
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v4
@@ -65,9 +67,7 @@ jobs:
           context: ./bootstrap
           platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/kloudyuk/torrential-bootstrap:${{ github.ref_name }}
-            ghcr.io/kloudyuk/torrential-bootstrap:${{ steps.version.outputs.minor_tag }}
+          tags: ghcr.io/kloudyuk/torrential-bootstrap:${{ github.ref_name }}
           labels: |
             org.opencontainers.image.source=https://github.com/${{ github.repository }}
             org.opencontainers.image.revision=${{ github.sha }}
