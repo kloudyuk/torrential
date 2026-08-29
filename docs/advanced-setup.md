@@ -18,7 +18,7 @@ inside a Compose container, and its numeric name may change after a reconnect.
 
 Do not use `network_mode: host` or refer to a macOS interface such as `utun4` in the
 Compose file. Neither gives a container a stable, enforceable route through that
-host interface. Torrential includes pinned
+host interface. Torrential includes a versioned
 [Gluetun](https://github.com/qdm12/gluetun), whose network namespace and firewall are
 shared by the three routed services.
 
@@ -44,29 +44,28 @@ against multiple servers, set `OPENVPN_PROTOCOL=tcp` and recreate the stack. TCP
 usually traverses restrictive networks more reliably, while UDP generally offers
 better throughput when it is available.
 
-On the first start, `scripts/stack-up.sh` downloads the current server list for
-`VPN_SERVICE_PROVIDER` when `${CONFIG_ROOT}/gluetun/servers.json` does not exist. If
-an existing list later becomes stale, stop Gluetun, remove that file, and run the
-wrapper again:
+Gluetun updates the active provider's persisted server list every 480 hours after the
+VPN tunnel is established. If the embedded and persisted data are too stale to make
+the initial connection, perform the documented manual recovery update before
+starting the stack:
 
 ```bash
-docker compose stop gluetun
-rm ./state/config/gluetun/servers.json
-./scripts/stack-up.sh
+docker compose run --rm --no-deps gluetun update -enduser -providers nordvpn
 ```
 
-Adjust the path when `CONFIG_ROOT` is not `./state/config`. Some providers need
-additional updater-specific arguments; consult Gluetun's
+Replace `nordvpn` with the configured provider. Some providers need additional
+updater-specific arguments; consult Gluetun's
 [server-list update guidance](https://github.com/qdm12/gluetun-wiki/blob/main/setup/servers.md#update-the-vpn-servers-list).
 The update resolves VPN server hostnames outside the tunnel and can expose those DNS
 queries to the host network.
 
 After configuring `.env` as described in [Deployment and setup](deployment.md), start
-through the bootstrap-aware wrapper. On a new deployment, approve the single Plex
-authorization URL printed by the wrapper. Stop with ordinary Compose:
+the stack in the background and follow only the bootstrap log. On a new deployment,
+approve the single Plex authorization URL shown there. Stop with ordinary Compose:
 
 ```bash
-./scripts/stack-up.sh
+docker compose up -d
+docker compose logs --follow bootstrap
 docker compose down
 ```
 

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -21,6 +22,8 @@ type plexConfig struct {
 	authorizeURL          string
 	configFile            string
 	language              string
+	country               int
+	notificationURL       string
 	libraries             []plexLibrary
 	timeout               time.Duration
 	authTimeout           time.Duration
@@ -60,14 +63,17 @@ func (err *plexHTTPError) Error() string {
 }
 
 type plexSection struct {
+	Key      string `json:"key"`
 	Title    string `json:"title"`
 	Type     string `json:"type"`
+	Agent    string `json:"agent"`
+	Language string `json:"language"`
 	Location []struct {
 		Path string `json:"path"`
 	} `json:"Location"`
 }
 
-func loadPlexConfig(env environment, timeout time.Duration, tvRoot, movieRoot string) (plexConfig, error) {
+func loadPlexConfig(env environment, timeout time.Duration, tvRoot, movieRoot string, locale localeConfig) (plexConfig, error) {
 	baseURL, err := envURL(env, "PLEX_URL", "http://plex:32400")
 	if err != nil {
 		return plexConfig{}, err
@@ -80,12 +86,22 @@ func loadPlexConfig(env environment, timeout time.Duration, tvRoot, movieRoot st
 	if err != nil {
 		return plexConfig{}, err
 	}
+	notificationURL, err := envURL(env, "PLEX_NOTIFICATION_URL", "http://plex:32400")
+	if err != nil {
+		return plexConfig{}, err
+	}
+	country, ok := plexCountries[locale.region]
+	if !ok {
+		return plexConfig{}, fmt.Errorf("LOCALE region %s is not supported by Plex certification countries", locale.region)
+	}
 	return plexConfig{
 		baseURL:               baseURL,
 		plexTVURL:             plexTVURL,
 		authorizeURL:          authorizeURL,
-		configFile:            envValue(env, "PLEX_CONFIG_FILE", "/plex-config/Library/Application Support/Plex Media Server/Preferences.xml"),
-		language:              envValue(env, "PLEX_LIBRARY_LANGUAGE", "en-US"),
+		configFile:            envValue(env, "PLEX_CONFIG_FILE", "/config/plex/Library/Application Support/Plex Media Server/Preferences.xml"),
+		language:              locale.tag,
+		country:               country,
+		notificationURL:       notificationURL,
 		timeout:               timeout,
 		authTimeout:           15 * time.Minute,
 		authPollInterval:      2 * time.Second,
@@ -98,12 +114,22 @@ func loadPlexConfig(env environment, timeout time.Duration, tvRoot, movieRoot st
 	}, nil
 }
 
+var plexCountries = map[string]int{
+	"AR": 1, "AU": 2, "AT": 3, "BE": 4, "BZ": 5, "BO": 6, "BR": 7,
+	"CA": 8, "CL": 9, "CO": 10, "CR": 11, "CZ": 12, "DK": 13, "DO": 14,
+	"EC": 15, "SV": 16, "FR": 17, "DE": 18, "GT": 19, "HN": 20, "HK": 21,
+	"IE": 22, "IT": 23, "JM": 24, "KR": 25, "LI": 26, "LU": 27, "MX": 28,
+	"NL": 29, "NZ": 30, "NI": 31, "PA": 32, "PY": 33, "PE": 34, "PT": 35,
+	"CN": 36, "PR": 37, "RU": 38, "SG": 39, "ZA": 40, "ES": 41, "SE": 42,
+	"CH": 43, "TW": 44, "TT": 45, "GB": 46, "US": 47, "UY": 48, "VE": 49,
+}
+
 func configurePlexLibraries(configuration plexConfig, token string) error {
 	client := newPlexClient(configuration.baseURL, token, configuration.timeout)
 	client.readinessTimeout = configuration.readinessTimeout
 	client.retryInterval = configuration.readinessPollInterval
 	for _, library := range configuration.libraries {
-		state, err := client.ensureLibrary(library, configuration.language)
+		state, err := client.ensureLibrary(library, configuration.language, configuration.country)
 		if err != nil {
 			return err
 		}
@@ -143,10 +169,10 @@ func readPlexToken(filename string) (string, error) {
 	return token, nil
 }
 
-func (client plexClient) ensureLibrary(library plexLibrary, language string) (string, error) {
+func (client plexClient) ensureLibrary(library plexLibrary, language string, country int) (string, error) {
 	deadline := time.Now().Add(client.readinessTimeout)
 	for {
-		state, err := client.ensureLibraryOnce(library, language)
+		state, err := client.ensureLibraryOnce(library, language, country)
 		if err == nil || !isPlexReadinessError(err) || client.readinessTimeout <= 0 || !time.Now().Before(deadline) {
 			return state, err
 		}
@@ -162,7 +188,7 @@ func (client plexClient) ensureLibrary(library plexLibrary, language string) (st
 	}
 }
 
-func (client plexClient) ensureLibraryOnce(library plexLibrary, language string) (string, error) {
+func (client plexClient) ensureLibraryOnce(library plexLibrary, language string, country int) (string, error) {
 	sections, err := client.sections()
 	if err != nil {
 		return "", err
@@ -179,7 +205,19 @@ func (client plexClient) ensureLibraryOnce(library plexLibrary, language string)
 			if section.Type != library.typeName {
 				return "", fmt.Errorf("Plex library at %s has type %s, expected %s", library.location, section.Type, library.typeName)
 			}
-			return "already present", nil
+			agent := section.Agent
+			if agent == "" {
+				agent = library.agent
+			}
+			values := url.Values{
+				"agent":          {agent},
+				"language":       {language},
+				"prefs[country]": {strconv.Itoa(country)},
+			}
+			if err := client.request(http.MethodPut, "/library/sections/"+url.PathEscape(section.Key)+"?"+values.Encode(), nil); err != nil {
+				return "", err
+			}
+			return "configured", nil
 		}
 		if section.Title == library.name {
 			return "", fmt.Errorf("Plex library %q already exists with a different location", library.name)
@@ -187,12 +225,13 @@ func (client plexClient) ensureLibraryOnce(library plexLibrary, language string)
 	}
 
 	values := url.Values{
-		"name":     {library.name},
-		"type":     {library.typeName},
-		"agent":    {library.agent},
-		"scanner":  {library.scanner},
-		"language": {language},
-		"location": {library.location},
+		"name":           {library.name},
+		"type":           {library.typeName},
+		"agent":          {library.agent},
+		"scanner":        {library.scanner},
+		"language":       {language},
+		"location":       {library.location},
+		"prefs[country]": {strconv.Itoa(country)},
 	}
 	if err := client.request(http.MethodPost, "/library/sections?"+values.Encode(), nil); err != nil {
 		return "", err

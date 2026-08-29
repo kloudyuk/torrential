@@ -1,0 +1,10 @@
+services:
+  init:
+    build:
+      context: ./bootstrap
+    image: torrential-bootstrap:dev
+
+  bootstrap:
+    build:
+      context: ./bootstrap
+    image: torrential-bootstrap:dev

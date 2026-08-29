@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"net/url"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -94,6 +96,70 @@ func (client *arrClient) ensureTransmission(transmission transmissionConfig) (st
 	}
 	var created providerResource
 	if err := client.api.post("/api/v3/downloadclient", payload, &created); err != nil {
+		return "", err
+	}
+	return "created", nil
+}
+
+func (client *arrClient) ensurePlexNotification(plexURL, token string) (string, error) {
+	parsed, err := url.Parse(plexURL)
+	if err != nil {
+		return "", fmt.Errorf("parse Plex notification URL: %w", err)
+	}
+	port := 32400
+	if parsed.Port() != "" {
+		port, err = strconv.Atoi(parsed.Port())
+		if err != nil {
+			return "", fmt.Errorf("Plex notification URL has an invalid port")
+		}
+	}
+
+	var notifications, schemas []providerResource
+	if err := client.api.get("/api/v3/notification", &notifications); err != nil {
+		return "", err
+	}
+	if err := client.api.get("/api/v3/notification/schema", &schemas); err != nil {
+		return "", err
+	}
+	existing, err := selectExisting(notifications, "PlexServer")
+	if err != nil {
+		return "", err
+	}
+	schema := findImplementation(schemas, "PlexServer")
+	if schema == nil {
+		return "", fmt.Errorf("%s does not expose a Plex Media Server schema", client.name)
+	}
+	base := schema
+	if existing != nil {
+		base = existing
+	}
+	fields, err := updateFields(base["fields"], map[string]any{
+		"host":          parsed.Hostname(),
+		"port":          port,
+		"useSsl":        parsed.Scheme == "https",
+		"urlBase":       strings.Trim(parsed.Path, "/"),
+		"authToken":     token,
+		"updateLibrary": true,
+		"mapFrom":       "",
+		"mapTo":         "",
+	})
+	if err != nil {
+		return "", err
+	}
+	payload := cloneResource(base)
+	payload["name"] = "Plex"
+	payload["onDownload"] = true
+	payload["onUpgrade"] = true
+	payload["fields"] = fields
+
+	if id, ok := resourceID(existing); ok {
+		if err := client.api.put(fmt.Sprintf("/api/v3/notification/%d", id), payload); err != nil {
+			return "", err
+		}
+		return "updated", nil
+	}
+	var created providerResource
+	if err := client.api.post("/api/v3/notification", payload, &created); err != nil {
 		return "", err
 	}
 	return "created", nil

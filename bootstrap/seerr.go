@@ -17,6 +17,7 @@ type seerrConfig struct {
 	configFile           string
 	sonarrQualityProfile string
 	radarrQualityProfile string
+	locale               localeConfig
 }
 
 type seerrClient struct {
@@ -48,17 +49,28 @@ type seerrDVRSettings struct {
 	Port     int    `json:"port"`
 }
 
-func loadSeerrConfig(env environment) (seerrConfig, error) {
+func loadSeerrConfig(env environment, locale localeConfig) (seerrConfig, error) {
 	baseURL, err := envURL(env, "SEERR_URL", "http://seerr:5055")
 	if err != nil {
 		return seerrConfig{}, err
 	}
 	return seerrConfig{
 		baseURL:              baseURL,
-		configFile:           envValue(env, "SEERR_CONFIG_FILE", "/service-config/seerr/settings.json"),
+		configFile:           envValue(env, "SEERR_CONFIG_FILE", "/config/seerr/settings.json"),
 		sonarrQualityProfile: envValue(env, "SEERR_SONARR_QUALITY_PROFILE", "HD-1080p"),
 		radarrQualityProfile: envValue(env, "SEERR_RADARR_QUALITY_PROFILE", "HD-1080p"),
+		locale:               locale,
 	}, nil
+}
+
+func (client *seerrClient) configureLocale() error {
+	var settings map[string]any
+	return client.api.post("/api/v1/settings/main", map[string]any{
+		"locale":           client.config.locale.language,
+		"discoverRegion":   client.config.locale.region,
+		"streamingRegion":  client.config.locale.region,
+		"originalLanguage": client.config.locale.language,
+	}, &settings)
 }
 
 func newSeerrClient(configuration seerrConfig, timeout time.Duration) (*seerrClient, error) {

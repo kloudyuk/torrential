@@ -103,11 +103,25 @@ func bootstrapPlexAndSeerr(
 	if err := configurePlexLibraries(plexConfiguration, serverToken); err != nil {
 		return err
 	}
+	state, err := sonarr.ensurePlexNotification(plexConfiguration.notificationURL, serverToken)
+	if err != nil {
+		return err
+	}
+	logMessage("Sonarr Plex connection " + state)
+	state, err = radarr.ensurePlexNotification(plexConfiguration.notificationURL, serverToken)
+	if err != nil {
+		return err
+	}
+	logMessage("Radarr Plex connection " + state)
+	if err := seerr.configureLocale(); err != nil {
+		return err
+	}
+	logMessage("Seerr locale configured")
 	if err := seerr.configurePlex(); err != nil {
 		return err
 	}
 	logMessage("Seerr Plex server and libraries configured")
-	state, err := seerr.ensureArr("sonarr", sonarr, sonarrKey, seerrConfiguration.sonarrQualityProfile)
+	state, err = seerr.ensureArr("sonarr", sonarr, sonarrKey, seerrConfiguration.sonarrQualityProfile)
 	if err != nil {
 		return err
 	}
@@ -240,7 +254,8 @@ func claimPlexServer(configuration plexConfig, claimToken, clientID string) erro
 	request.Header.Set("X-Plex-Device", plexDevice)
 	request.Header.Set("X-Plex-Device-Name", plexDeviceName)
 	request.Header.Set("X-Plex-Provides", "controller")
-	request.Header.Set("X-Plex-Language", "en")
+	language, _, _ := strings.Cut(configuration.language, "-")
+	request.Header.Set("X-Plex-Language", language)
 	claimTimeout := configuration.readinessTimeout
 	if claimTimeout <= 0 {
 		claimTimeout = configuration.timeout

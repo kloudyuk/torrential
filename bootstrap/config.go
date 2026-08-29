@@ -12,6 +12,8 @@ import (
 
 type config struct {
 	requestTimeout time.Duration
+	startupTimeout time.Duration
+	dashboardURL   string
 	uid            int
 	gid            int
 	sonarr         arrConfig
@@ -21,6 +23,13 @@ type config struct {
 	plex           plexConfig
 	seerr          seerrConfig
 	directories    directoryConfig
+	locale         localeConfig
+}
+
+type localeConfig struct {
+	tag      string
+	language string
+	region   string
 }
 
 type serviceConfig struct {
@@ -43,6 +52,7 @@ type directoryConfig struct {
 	incomplete string
 	tv         string
 	movies     string
+	transcode  string
 }
 
 type environment func(string) (string, bool)
@@ -50,8 +60,20 @@ type environment func(string) (string, bool)
 func loadConfig(env environment) (config, error) {
 	tv := envValue(env, "BOOTSTRAP_TV_ROOT", "/data/media/tv")
 	movies := envValue(env, "BOOTSTRAP_MOVIE_ROOT", "/data/media/movies")
+	locale, err := parseLocale(envValue(env, "LOCALE", "en-GB"))
+	if err != nil {
+		return config{}, err
+	}
 
 	timeoutMS, err := envInteger(env, "BOOTSTRAP_REQUEST_TIMEOUT_MS", 15000, 1)
+	if err != nil {
+		return config{}, err
+	}
+	startupTimeoutMS, err := envInteger(env, "BOOTSTRAP_STARTUP_TIMEOUT_MS", 300000, 1)
+	if err != nil {
+		return config{}, err
+	}
+	dashboardURL, err := loadDashboardURL(env)
 	if err != nil {
 		return config{}, err
 	}
@@ -81,42 +103,84 @@ func loadConfig(env environment) (config, error) {
 		return config{}, err
 	}
 	requestTimeout := time.Duration(timeoutMS) * time.Millisecond
-	plex, err := loadPlexConfig(env, requestTimeout, tv, movies)
+	plex, err := loadPlexConfig(env, requestTimeout, tv, movies, locale)
 	if err != nil {
 		return config{}, err
 	}
-	seerr, err := loadSeerrConfig(env)
+	seerr, err := loadSeerrConfig(env, locale)
 	if err != nil {
 		return config{}, err
 	}
 
 	return config{
 		requestTimeout: requestTimeout,
+		startupTimeout: time.Duration(startupTimeoutMS) * time.Millisecond,
+		dashboardURL:   dashboardURL,
 		uid:            uid,
 		gid:            gid,
 		sonarr: arrConfig{
-			serviceConfig: serviceConfig{sonarrURL, envValue(env, "SONARR_CONFIG_FILE", "/arr-config/sonarr/config.xml")},
+			serviceConfig: serviceConfig{sonarrURL, envValue(env, "SONARR_CONFIG_FILE", "/config/sonarr/config.xml")},
 			rootFolder:    tv,
 			category:      envValue(env, "SONARR_CATEGORY", "sonarr"),
 		},
 		radarr: arrConfig{
-			serviceConfig: serviceConfig{radarrURL, envValue(env, "RADARR_CONFIG_FILE", "/arr-config/radarr/config.xml")},
+			serviceConfig: serviceConfig{radarrURL, envValue(env, "RADARR_CONFIG_FILE", "/config/radarr/config.xml")},
 			rootFolder:    movies,
 			category:      envValue(env, "RADARR_CATEGORY", "radarr"),
 		},
-		prowlarr: serviceConfig{prowlarrURL, envValue(env, "PROWLARR_CONFIG_FILE", "/arr-config/prowlarr/config.xml")},
+		prowlarr: serviceConfig{prowlarrURL, envValue(env, "PROWLARR_CONFIG_FILE", "/config/prowlarr/config.xml")},
 		transmission: transmissionConfig{
 			rpcURL: transmissionURL,
 		},
-		plex:  plex,
-		seerr: seerr,
+		plex:   plex,
+		seerr:  seerr,
+		locale: locale,
 		directories: directoryConfig{
 			complete:   envValue(env, "TRANSMISSION_COMPLETE_DIR", "/data/torrents/complete"),
 			incomplete: envValue(env, "TRANSMISSION_INCOMPLETE_DIR", "/data/torrents/incomplete"),
 			tv:         tv,
 			movies:     movies,
+			transcode:  "/data/transcode",
 		},
 	}, nil
+}
+
+func loadDashboardURL(env environment) (string, error) {
+	host, ok := env("TORRENTIAL_HOST")
+	host = strings.TrimSpace(host)
+	if !ok || host == "" {
+		return "", fmt.Errorf("TORRENTIAL_HOST is required")
+	}
+	parsed, err := url.Parse("http://" + host)
+	if err != nil || parsed.Hostname() == "" || parsed.Port() != "" || parsed.Path != "" || parsed.RawQuery != "" || parsed.Fragment != "" {
+		return "", fmt.Errorf("TORRENTIAL_HOST must be an IP address or DNS name without a scheme or port")
+	}
+	port, err := envInteger(env, "DASHBOARD_PORT", 80, 1)
+	if err != nil {
+		return "", err
+	}
+	if port > 65535 {
+		return "", fmt.Errorf("DASHBOARD_PORT must be less than or equal to 65535")
+	}
+	if port == 80 {
+		return "http://" + host, nil
+	}
+	return fmt.Sprintf("http://%s:%d", host, port), nil
+}
+
+func parseLocale(value string) (localeConfig, error) {
+	parts := strings.Split(strings.TrimSpace(value), "-")
+	if len(parts) != 2 || len(parts[0]) != 2 || len(parts[1]) != 2 {
+		return localeConfig{}, fmt.Errorf("LOCALE must use language-region form such as en-GB")
+	}
+	for _, character := range parts[0] + parts[1] {
+		if character < 'A' || character > 'Z' && character < 'a' || character > 'z' {
+			return localeConfig{}, fmt.Errorf("LOCALE must use language-region form such as en-GB")
+		}
+	}
+	language := strings.ToLower(parts[0])
+	region := strings.ToUpper(parts[1])
+	return localeConfig{tag: language + "-" + region, language: language, region: region}, nil
 }
 
 func envValue(env environment, name, fallback string) string {

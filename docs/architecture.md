@@ -4,27 +4,22 @@ Torrential is the complete deployment described in this document.
 
 ```text
 User
-  |\
-  | +--> Dashboard (links to all web interfaces)
-  |
-  v
-Seerr -------------------------------> Plex Media Server
-  |                                       ^
-  +--> Sonarr (TV) ---+                    |
-  |                   +--> Transmission   |
-  +--> Radarr (movie)-+        |           |
-          ^                    v           |
-          |              /data/torrents    |
-       Prowlarr                 |           |
-          |                     v           |
-       indexers          Sonarr/Radarr import and rename
-          ^                     |
-          |                     v
-   FlareSolverr when tagged  /data/media/{tv,movies}
+  +--> Dashboard
+  +--> Seerr --> Sonarr/Radarr --> Transmission --> /data/torrents
+                   ^                                      |
+                   |                                      v
+                Prowlarr <--- indexers       import and rename
+                   ^                                      |
+                   |                                      v
+          FlareSolverr when tagged             /data/media/{tv,movies}
+                                                          |
+                   Sonarr/Radarr -- scan request --> Plex <+
 ```
 
-Bootstrap performs the one-time Plex account authorization when needed, configures
-fixed paths, service connections, and libraries, then exits.
+The bootstrap image first runs as a one-shot filesystem init service. After it
+succeeds, the same image runs once as the configuration coordinator. The coordinator
+waits for the other services, performs Plex account authorization when needed,
+configures fixed paths, connections, and libraries, and exits.
 Gluetun supplies the only network namespace available to Transmission,
 Prowlarr, and FlareSolverr.
 
@@ -41,14 +36,15 @@ Prowlarr, and FlareSolverr.
 | Torrent transfer state and files | Transmission |
 | Library indexing, playback, and media-server users | Plex |
 | Plex first-run state | Plex startup hook |
-| Plex authorization, stable paths, libraries, and internal service connections | Bootstrap |
-| VPN credentials, indexer eligibility, quality-profile selection, and Plex approval | Operator |
+| Host-directory ownership, Plex authorization, locale defaults, stable paths, libraries, and internal service connections | Bootstrap |
+| LAN identity, VPN credentials, indexer eligibility, quality-profile selection, and Plex approval | Operator |
 
 Seerr delegates TV requests to Sonarr and movie requests to Radarr. Prowlarr
 synchronizes its indexers into Sonarr and Radarr, which search for releases and send
 their selections to Transmission. Sonarr and Radarr then import completed files into
 their media roots, and Plex indexes those roots. Sonarr and Radarr own media import
-and naming.
+and naming, then explicitly notify Plex after imports and upgrades so discovery does
+not depend on bind-mount filesystem notifications.
 
 ## Storage contract
 
@@ -88,14 +84,16 @@ bind to all host interfaces by default for trusted-LAN access. Sonarr, Radarr,
 Prowlarr, and Transmission do not require application authentication, so none of
 these published ports may be exposed directly to the public internet. Set
 `WEB_BIND_ADDRESS=127.0.0.1` to restrict every interface to the host instead.
+Dashboard links preserve the hostname or IP address used to open it. Plex's
+advertised server URL uses the operator-supplied `TORRENTIAL_HOST` and `PLEX_PORT`.
 
 Transmission, Prowlarr, and FlareSolverr unconditionally share Gluetun's network
 namespace and have no independent fallback route. Gluetun publishes the Transmission
 and Prowlarr management ports and provides their internal DNS aliases. Sonarr,
-Radarr, Seerr, and Plex remain on the normal network. The one-shot bootstrap shares
-Plex's network namespace so Plex sees its server-claim request as local; it retains
-access to the normal Compose network and never inherits acquisition VPN routing.
-Plex remains directly reachable by LAN clients.
+Radarr, Seerr, and Plex remain on the normal Compose network. The coordinator shares
+Plex's network namespace only so the initial claim request originates from Plex
+loopback; it still has normal Compose-network access and never inherits acquisition
+VPN routing. Plex remains directly reachable by LAN clients.
 
 The aliases mean other services still use `transmission:9091` and `prowlarr:9696`;
 those names resolve to Gluetun's namespace. Prowlarr reaches FlareSolverr through
@@ -119,6 +117,8 @@ libraries, so opening Plex does not launch the redundant server setup wizard.
 Policy-bearing choices supplied by the operator are:
 
 - Plex account approval
+- Stable LAN IP address or local DNS name, selected in `.env`
+- Time zone and locale, selected in `.env`
 - Seerr quality profiles, selected by name in `.env`
 - Prowlarr indexers, credentials, tags, and FlareSolverr assignment
 - Sonarr/Radarr quality profiles, custom formats, and naming preferences

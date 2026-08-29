@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -15,7 +16,7 @@ import (
 )
 
 func TestLoadConfigDefaults(t *testing.T) {
-	configuration, err := loadConfig(func(string) (string, bool) { return "", false })
+	configuration, err := loadConfig(mapEnvironment(map[string]string{"TORRENTIAL_HOST": "127.0.0.1"}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -27,13 +28,54 @@ func TestLoadConfigDefaults(t *testing.T) {
 	assertEqual(t, configuration.prowlarr.baseURL, "http://prowlarr:9696")
 	assertEqual(t, configuration.transmission.rpcURL, "http://transmission:9091/transmission/rpc")
 	assertEqual(t, configuration.seerr.baseURL, "http://seerr:5055")
-	assertEqual(t, configuration.seerr.configFile, "/service-config/seerr/settings.json")
+	assertEqual(t, configuration.sonarr.configFile, "/config/sonarr/config.xml")
+	assertEqual(t, configuration.radarr.configFile, "/config/radarr/config.xml")
+	assertEqual(t, configuration.prowlarr.configFile, "/config/prowlarr/config.xml")
+	assertEqual(t, configuration.plex.configFile, "/config/plex/Library/Application Support/Plex Media Server/Preferences.xml")
+	assertEqual(t, configuration.seerr.configFile, "/config/seerr/settings.json")
 	assertEqual(t, configuration.seerr.sonarrQualityProfile, "HD-1080p")
 	assertEqual(t, configuration.seerr.radarrQualityProfile, "HD-1080p")
+	assertEqual(t, configuration.locale, localeConfig{tag: "en-GB", language: "en", region: "GB"})
+	assertEqual(t, configuration.dashboardURL, "http://127.0.0.1")
+	assertEqual(t, configuration.plex.country, 46)
+	assertEqual(t, configuration.directories.transcode, "/data/transcode")
+	assertEqual(t, configuration.startupTimeout, 300*time.Second)
+}
+
+func TestLoadConfigRequiresTorrentialHost(t *testing.T) {
+	_, err := loadConfig(func(string) (string, bool) { return "", false })
+	if err == nil || !strings.Contains(err.Error(), "TORRENTIAL_HOST is required") {
+		t.Fatalf("expected required dashboard host error, got %v", err)
+	}
+}
+
+func TestLoadConfigBuildsLANAndCustomPortDashboardURL(t *testing.T) {
+	configuration, err := loadConfig(mapEnvironment(map[string]string{
+		"TORRENTIAL_HOST": "192.168.0.71",
+		"DASHBOARD_PORT":  "8080",
+	}))
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEqual(t, configuration.dashboardURL, "http://192.168.0.71:8080")
+}
+
+func TestLoadConfigRejectsDashboardHostWithScheme(t *testing.T) {
+	_, err := loadConfig(mapEnvironment(map[string]string{"TORRENTIAL_HOST": "http://192.168.0.71"}))
+	if err == nil || !strings.Contains(err.Error(), "TORRENTIAL_HOST") {
+		t.Fatalf("expected dashboard host validation error, got %v", err)
+	}
+}
+
+func TestLoadConfigRejectsInvalidLocale(t *testing.T) {
+	_, err := loadConfig(mapEnvironment(map[string]string{"LOCALE": "English_UK"}))
+	if err == nil || !strings.Contains(err.Error(), "LOCALE must use language-region form") {
+		t.Fatalf("expected locale validation error, got %v", err)
+	}
 }
 
 func TestLoadConfigRejectsInvalidValues(t *testing.T) {
-	values := map[string]string{"PUID": "not-a-number"}
+	values := map[string]string{"TORRENTIAL_HOST": "127.0.0.1", "PUID": "not-a-number"}
 	_, err := loadConfig(mapEnvironment(values))
 	if err == nil || !strings.Contains(err.Error(), "PUID must be an integer") {
 		t.Fatalf("expected PUID validation error, got %v", err)
@@ -62,6 +104,7 @@ func TestEnsureDirectoriesCreatesDownloadCategories(t *testing.T) {
 			incomplete: filepath.Join(root, "torrents", "incomplete"),
 			tv:         filepath.Join(root, "media", "tv"),
 			movies:     filepath.Join(root, "media", "movies"),
+			transcode:  filepath.Join(root, "transcode"),
 		},
 	}
 	directories := dataDirectories(configuration)
@@ -80,12 +123,111 @@ func TestEnsureDirectoriesCreatesDownloadCategories(t *testing.T) {
 	}
 }
 
+func TestPrepareDirectoriesCreatesServiceAndDataPaths(t *testing.T) {
+	root := t.TempDir()
+	configRoot := filepath.Join(root, "config")
+	configuration := config{
+		uid:    os.Getuid(),
+		gid:    os.Getgid(),
+		sonarr: arrConfig{category: "sonarr"},
+		radarr: arrConfig{category: "radarr"},
+		directories: directoryConfig{
+			complete:   filepath.Join(root, "data", "torrents", "complete"),
+			incomplete: filepath.Join(root, "data", "torrents", "incomplete"),
+			tv:         filepath.Join(root, "data", "media", "tv"),
+			movies:     filepath.Join(root, "data", "media", "movies"),
+			transcode:  filepath.Join(root, "data", "transcode"),
+		},
+	}
+
+	if err := prepareDirectories(configuration, configRoot); err != nil {
+		t.Fatal(err)
+	}
+	for _, directory := range []string{
+		filepath.Join(configRoot, "sonarr"),
+		filepath.Join(configRoot, "radarr"),
+		filepath.Join(configRoot, "seerr", "logs"),
+		filepath.Join(configRoot, "plex"),
+		filepath.Join(configRoot, "prowlarr"),
+		filepath.Join(configRoot, "flaresolverr"),
+		filepath.Join(configRoot, "transmission"),
+		configuration.directories.incomplete,
+		filepath.Join(configuration.directories.complete, "sonarr"),
+		filepath.Join(configuration.directories.complete, "radarr"),
+		configuration.directories.tv,
+		configuration.directories.movies,
+		configuration.directories.transcode,
+	} {
+		info, err := os.Stat(directory)
+		if err != nil {
+			t.Fatalf("expected %s to exist: %v", directory, err)
+		}
+		if !info.IsDir() {
+			t.Fatalf("expected %s to be a directory", directory)
+		}
+	}
+}
+
+func TestWaitForPrerequisites(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		if request.URL.Path == "/transmission/rpc" {
+			writer.WriteHeader(http.StatusConflict)
+			return
+		}
+		writer.WriteHeader(http.StatusOK)
+	}))
+	defer server.Close()
+
+	root := t.TempDir()
+	files := make([]string, 5)
+	for index := range files {
+		files[index] = filepath.Join(root, fmt.Sprintf("config-%d", index))
+		if err := os.WriteFile(files[index], []byte("ready"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	configuration := config{
+		requestTimeout: time.Second,
+		startupTimeout: time.Second,
+		sonarr:         arrConfig{serviceConfig: serviceConfig{baseURL: server.URL, configFile: files[0]}},
+		radarr:         arrConfig{serviceConfig: serviceConfig{baseURL: server.URL, configFile: files[1]}},
+		prowlarr:       serviceConfig{baseURL: server.URL, configFile: files[2]},
+		plex:           plexConfig{baseURL: server.URL, configFile: files[3]},
+		seerr:          seerrConfig{baseURL: server.URL, configFile: files[4]},
+		transmission:   transmissionConfig{rpcURL: server.URL + "/transmission/rpc"},
+	}
+
+	if err := waitForPrerequisites(configuration); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestWaitForPrerequisitesReportsPendingServices(t *testing.T) {
+	root := t.TempDir()
+	configuration := config{
+		requestTimeout: 10 * time.Millisecond,
+		startupTimeout: 20 * time.Millisecond,
+		sonarr:         arrConfig{serviceConfig: serviceConfig{baseURL: "http://127.0.0.1:1", configFile: filepath.Join(root, "sonarr")}},
+		radarr:         arrConfig{serviceConfig: serviceConfig{baseURL: "http://127.0.0.1:1", configFile: filepath.Join(root, "radarr")}},
+		prowlarr:       serviceConfig{baseURL: "http://127.0.0.1:1", configFile: filepath.Join(root, "prowlarr")},
+		plex:           plexConfig{baseURL: "http://127.0.0.1:1", configFile: filepath.Join(root, "plex")},
+		seerr:          seerrConfig{baseURL: "http://127.0.0.1:1", configFile: filepath.Join(root, "seerr")},
+		transmission:   transmissionConfig{rpcURL: "http://127.0.0.1:1/transmission/rpc"},
+	}
+
+	err := waitForPrerequisites(configuration)
+	if err == nil || !strings.Contains(err.Error(), "Sonarr configuration") || !strings.Contains(err.Error(), "Transmission RPC") {
+		t.Fatalf("expected pending readiness details, got %v", err)
+	}
+}
+
 func TestLoadPlexConfigDefaults(t *testing.T) {
 	configuration, err := loadPlexConfig(
 		func(string) (string, bool) { return "", false },
 		15*time.Second,
 		"/data/media/tv",
 		"/data/media/movies",
+		localeConfig{tag: "en-GB", language: "en", region: "GB"},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -93,7 +235,9 @@ func TestLoadPlexConfigDefaults(t *testing.T) {
 	assertEqual(t, configuration.baseURL, "http://plex:32400")
 	assertEqual(t, configuration.plexTVURL, "https://plex.tv")
 	assertEqual(t, configuration.authorizeURL, "https://app.plex.tv/auth")
-	assertEqual(t, configuration.language, "en-US")
+	assertEqual(t, configuration.language, "en-GB")
+	assertEqual(t, configuration.country, 46)
+	assertEqual(t, configuration.notificationURL, "http://plex:32400")
 	assertEqual(t, configuration.libraries[0], plexLibrary{
 		name: "TV Shows", typeName: "show", agent: "tv.plex.agents.series",
 		scanner: "Plex TV Series", location: "/data/media/tv",
@@ -102,6 +246,31 @@ func TestLoadPlexConfigDefaults(t *testing.T) {
 		name: "Movies", typeName: "movie", agent: "tv.plex.agents.movie",
 		scanner: "Plex Movie", location: "/data/media/movies",
 	})
+}
+
+func TestSeerrConfiguresLocale(t *testing.T) {
+	var payload map[string]any
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		assertEqual(t, request.Method, http.MethodPost)
+		assertEqual(t, request.URL.Path, "/api/v1/settings/main")
+		if err := json.NewDecoder(request.Body).Decode(&payload); err != nil {
+			t.Fatal(err)
+		}
+		writeJSON(t, writer, payload)
+	}))
+	defer server.Close()
+
+	client := &seerrClient{
+		config: seerrConfig{locale: localeConfig{tag: "en-GB", language: "en", region: "GB"}},
+		api:    newAPIClient(server.URL, "seerr-key", time.Second),
+	}
+	if err := client.configureLocale(); err != nil {
+		t.Fatal(err)
+	}
+	assertEqual(t, payload["locale"], "en")
+	assertEqual(t, payload["discoverRegion"], "GB")
+	assertEqual(t, payload["streamingRegion"], "GB")
+	assertEqual(t, payload["originalLanguage"], "en")
 }
 
 func TestReadSeerrAPIKey(t *testing.T) {
@@ -306,6 +475,7 @@ func TestPlexCreatesMissingLibrary(t *testing.T) {
 			assertEqual(t, query.Get("agent"), "tv.plex.agents.series")
 			assertEqual(t, query.Get("scanner"), "Plex TV Series")
 			assertEqual(t, query.Get("language"), "en-US")
+			assertEqual(t, query.Get("prefs[country]"), "47")
 			assertEqual(t, query.Get("location"), "/data/media/tv")
 			writer.WriteHeader(http.StatusCreated)
 		default:
@@ -318,7 +488,7 @@ func TestPlexCreatesMissingLibrary(t *testing.T) {
 	state, err := client.ensureLibrary(plexLibrary{
 		name: "TV Shows", typeName: "show", agent: "tv.plex.agents.series",
 		scanner: "Plex TV Series", location: "/data/media/tv",
-	}, "en-US")
+	}, "en-US", 47)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -327,22 +497,34 @@ func TestPlexCreatesMissingLibrary(t *testing.T) {
 }
 
 func TestPlexReusesLibraryByLocation(t *testing.T) {
+	configured := false
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
-		writeJSON(t, writer, map[string]any{"MediaContainer": map[string]any{
-			"Directory": []any{map[string]any{
-				"title": "Television", "type": "show",
-				"Location": []any{map[string]any{"path": "/data/media/tv"}},
-			}},
-		}})
+		switch request.Method + " " + request.URL.Path {
+		case "GET /library/sections":
+			writeJSON(t, writer, map[string]any{"MediaContainer": map[string]any{
+				"Directory": []any{map[string]any{
+					"key": "7", "title": "Television", "type": "show", "agent": "tv.plex.agents.series",
+					"Location": []any{map[string]any{"path": "/data/media/tv"}},
+				}},
+			}})
+		case "PUT /library/sections/7":
+			assertEqual(t, request.URL.Query().Get("language"), "en-GB")
+			assertEqual(t, request.URL.Query().Get("prefs[country]"), "46")
+			configured = true
+			writer.WriteHeader(http.StatusOK)
+		default:
+			http.NotFound(writer, request)
+		}
 	}))
 	defer server.Close()
 
 	client := newPlexClient(server.URL, "server-token", time.Second)
-	state, err := client.ensureLibrary(plexLibrary{name: "TV Shows", typeName: "show", location: "/data/media/tv"}, "en-US")
+	state, err := client.ensureLibrary(plexLibrary{name: "TV Shows", typeName: "show", location: "/data/media/tv"}, "en-GB", 46)
 	if err != nil {
 		t.Fatal(err)
 	}
-	assertEqual(t, state, "already present")
+	assertEqual(t, state, "configured")
+	assertEqual(t, configured, true)
 }
 
 func TestPlexRetriesAuthorizationDuringFirstStart(t *testing.T) {
@@ -370,7 +552,7 @@ func TestPlexRetriesAuthorizationDuringFirstStart(t *testing.T) {
 	state, err := client.ensureLibrary(plexLibrary{
 		name: "Movies", typeName: "movie", agent: "tv.plex.agents.movie",
 		scanner: "Plex Movie", location: "/data/media/movies",
-	}, "en-US")
+	}, "en-US", 47)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -403,7 +585,7 @@ func TestPlexRetriesWhileLibrarySubsystemStarts(t *testing.T) {
 	state, err := client.ensureLibrary(plexLibrary{
 		name: "TV Shows", typeName: "show", agent: "tv.plex.agents.series",
 		scanner: "Plex TV Series", location: "/data/media/tv",
-	}, "en-US")
+	}, "en-US", 47)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -527,6 +709,42 @@ func TestArrCreatesRootAndTransmissionClient(t *testing.T) {
 	assertEqual(t, fields["tvCategory"], "sonarr")
 }
 
+func TestArrCreatesPlexLibraryUpdateConnection(t *testing.T) {
+	var notificationPayload providerResource
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.Method + " " + request.URL.Path {
+		case "GET /api/v3/notification":
+			writeJSON(t, writer, []any{})
+		case "GET /api/v3/notification/schema":
+			writeJSON(t, writer, []any{plexNotificationSchema()})
+		case "POST /api/v3/notification":
+			if err := json.NewDecoder(request.Body).Decode(&notificationPayload); err != nil {
+				t.Fatal(err)
+			}
+			writeJSON(t, writer, map[string]any{"id": 3})
+		default:
+			http.NotFound(writer, request)
+		}
+	}))
+	defer server.Close()
+
+	client := newArrClient("Sonarr", arrConfig{serviceConfig: serviceConfig{baseURL: server.URL}}, "api-key", time.Second)
+	state, err := client.ensurePlexNotification("http://plex:32400", "plex-token")
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEqual(t, state, "created")
+	assertEqual(t, notificationPayload["name"], "Plex")
+	assertEqual(t, notificationPayload["onDownload"], true)
+	assertEqual(t, notificationPayload["onUpgrade"], true)
+	fields := fieldsByName(t, notificationPayload["fields"])
+	assertEqual(t, fields["host"], "plex")
+	assertEqual(t, fields["port"], float64(32400))
+	assertEqual(t, fields["useSsl"], false)
+	assertEqual(t, fields["authToken"], "plex-token")
+	assertEqual(t, fields["updateLibrary"], true)
+}
+
 func TestProwlarrCreatesFullSyncApplication(t *testing.T) {
 	var applicationPayload providerResource
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
@@ -625,6 +843,25 @@ func transmissionSchema(categoryField string) map[string]any {
 			map[string]any{"name": "password", "value": nil},
 			map[string]any{"name": categoryField, "value": nil},
 		},
+	}
+}
+
+func plexNotificationSchema() map[string]any {
+	return map[string]any{
+		"implementation": "PlexServer",
+		"fields": []any{
+			map[string]any{"name": "server", "value": nil},
+			map[string]any{"name": "host", "value": ""},
+			map[string]any{"name": "port", "value": 32400},
+			map[string]any{"name": "useSsl", "value": false},
+			map[string]any{"name": "urlBase", "value": ""},
+			map[string]any{"name": "authToken", "value": nil},
+			map[string]any{"name": "signIn", "value": "startOAuth"},
+			map[string]any{"name": "updateLibrary", "value": true},
+			map[string]any{"name": "mapFrom", "value": ""},
+			map[string]any{"name": "mapTo", "value": ""},
+		},
+		"tags": []any{},
 	}
 }
 

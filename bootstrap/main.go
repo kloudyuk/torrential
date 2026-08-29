@@ -8,8 +8,15 @@ import (
 
 func main() {
 	configuration, err := loadConfig(os.LookupEnv)
-	if err == nil {
+	if err == nil && len(os.Args) == 2 && os.Args[1] == "prepare" {
+		err = prepareDirectories(configuration, "/config")
+		if err == nil {
+			logMessage("host directories ready")
+		}
+	} else if err == nil && len(os.Args) == 1 {
 		err = bootstrap(configuration)
+	} else if err == nil {
+		err = fmt.Errorf("usage: bootstrap [prepare]")
 	}
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "[bootstrap] failed: %v\n", err)
@@ -17,11 +24,28 @@ func main() {
 	}
 }
 
+func prepareDirectories(configuration config, configRoot string) error {
+	directories := []string{
+		configRoot,
+		filepath.Join(configRoot, "gluetun"),
+		filepath.Join(configRoot, "sonarr"),
+		filepath.Join(configRoot, "radarr"),
+		filepath.Join(configRoot, "seerr"),
+		filepath.Join(configRoot, "seerr", "logs"),
+		filepath.Join(configRoot, "plex"),
+		filepath.Join(configRoot, "prowlarr"),
+		filepath.Join(configRoot, "flaresolverr"),
+		filepath.Join(configRoot, "transmission"),
+	}
+	directories = append(directories, dataDirectories(configuration)...)
+	return ensureDirectories(directories, configuration.uid, configuration.gid)
+}
+
 func bootstrap(configuration config) error {
-	if err := ensureDirectories(dataDirectories(configuration), configuration.uid, configuration.gid); err != nil {
+	if err := waitForPrerequisites(configuration); err != nil {
 		return err
 	}
-	logMessage("data directories ready")
+	logMessage("services ready")
 
 	sonarrKey, err := readAPIKey(configuration.sonarr.configFile)
 	if err != nil {
@@ -84,6 +108,7 @@ func bootstrap(configuration config) error {
 		return err
 	}
 	logMessage("bootstrap completed successfully")
+	printCompletionBanner(configuration.dashboardURL)
 	return nil
 }
 
@@ -95,6 +120,7 @@ func dataDirectories(configuration config) []string {
 		configuration.directories.incomplete,
 		configuration.directories.tv,
 		configuration.directories.movies,
+		configuration.directories.transcode,
 	}
 }
 
@@ -123,7 +149,9 @@ func ensureDirectories(directories []string, uid, gid int) error {
 			return fmt.Errorf("create %s: %w", directory, err)
 		}
 		owned[directory] = struct{}{}
-		owned[filepath.Dir(directory)] = struct{}{}
+		if parent := filepath.Dir(directory); parent != string(filepath.Separator) {
+			owned[parent] = struct{}{}
+		}
 	}
 	if os.Geteuid() != 0 {
 		return nil
@@ -138,4 +166,15 @@ func ensureDirectories(directories []string, uid, gid int) error {
 
 func logMessage(message string) {
 	fmt.Printf("[bootstrap] %s\n", message)
+}
+
+func printCompletionBanner(dashboardURL string) {
+	fmt.Printf(`[bootstrap] ############################################################
+[bootstrap]
+[bootstrap]                     TORRENTIAL IS READY
+[bootstrap]
+[bootstrap] Dashboard: %s
+[bootstrap]
+[bootstrap] ############################################################
+`, dashboardURL)
 }
