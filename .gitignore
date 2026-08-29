@@ -1,0 +1,6 @@
+.env
+.DS_Store
+*.log
+state/
+bootstrap/bootstrap
+coverage.out

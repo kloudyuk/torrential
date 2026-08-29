@@ -1,0 +1,204 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="dark">
+    <title>Torrential</title>
+    <style>
+      :root {
+        color-scheme: dark;
+        font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+        background: #090d16;
+        color: #f7f8fb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        min-height: 100vh;
+        margin: 0;
+        background:
+          radial-gradient(circle at top left, rgba(97, 95, 255, 0.18), transparent 32rem),
+          radial-gradient(circle at bottom right, rgba(37, 191, 173, 0.12), transparent 28rem),
+          #090d16;
+      }
+
+      main {
+        width: min(72rem, calc(100% - 2rem));
+        margin: 0 auto;
+        padding: clamp(3rem, 8vw, 6rem) 0;
+      }
+
+      header {
+        margin-bottom: 2rem;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(2rem, 5vw, 3.5rem);
+        letter-spacing: -0.05em;
+      }
+
+      header p {
+        margin: 0.6rem 0 0;
+        color: #98a2b7;
+        font-size: 1rem;
+      }
+
+      .services {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: 1rem;
+      }
+
+      .service {
+        display: flex;
+        min-height: 15rem;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem;
+        overflow: hidden;
+        color: inherit;
+        text-decoration: none;
+        background: rgba(19, 26, 42, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 1.25rem;
+        box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.18);
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+      }
+
+      .service:hover {
+        transform: translateY(-0.25rem);
+        background: #182137;
+        border-color: rgba(139, 138, 255, 0.6);
+      }
+
+      .service:focus-visible {
+        outline: 3px solid #8b8aff;
+        outline-offset: 3px;
+      }
+
+      .service-heading {
+        display: flex;
+        width: 100%;
+        align-items: center;
+        justify-content: space-between;
+        gap: 1rem;
+      }
+
+      h2 {
+        margin: 0;
+        font-size: 1.15rem;
+        letter-spacing: -0.02em;
+      }
+
+      .arrow {
+        color: #778198;
+        font-size: 1.15rem;
+      }
+
+      .service img {
+        width: 6rem;
+        height: 6rem;
+        margin: 1.25rem 0;
+        object-fit: contain;
+      }
+
+      .address {
+        width: 100%;
+        margin: 0;
+        overflow: hidden;
+        color: #7f899e;
+        font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+        font-size: 0.75rem;
+        text-align: center;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      @media (max-width: 48rem) {
+        .services {
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+        }
+      }
+
+      @media (max-width: 32rem) {
+        main {
+          width: min(100% - 1.25rem, 28rem);
+          padding: 2rem 0;
+        }
+
+        .services {
+          grid-template-columns: 1fr;
+        }
+
+        .service {
+          min-height: 12rem;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1>Torrential</h1>
+        <p>Your local media stack.</p>
+      </header>
+
+      <section class="services" aria-label="Media services">
+        <a class="service" data-port="${SEERR_PORT}" target="_blank" rel="noreferrer">
+          <span class="service-heading"><h2>Seerr</h2><span class="arrow" aria-hidden="true">↗</span></span>
+          <img data-path="/logo_stacked.svg" alt="Seerr icon">
+          <p class="address"></p>
+        </a>
+
+        <a class="service" data-port="${SONARR_PORT}" target="_blank" rel="noreferrer">
+          <span class="service-heading"><h2>Sonarr</h2><span class="arrow" aria-hidden="true">↗</span></span>
+          <img data-path="/Content/Images/logo.svg" alt="Sonarr icon">
+          <p class="address"></p>
+        </a>
+
+        <a class="service" data-port="${RADARR_PORT}" target="_blank" rel="noreferrer">
+          <span class="service-heading"><h2>Radarr</h2><span class="arrow" aria-hidden="true">↗</span></span>
+          <img data-path="/Content/Images/logo.svg" alt="Radarr icon">
+          <p class="address"></p>
+        </a>
+
+        <a class="service" data-port="${PROWLARR_PORT}" target="_blank" rel="noreferrer">
+          <span class="service-heading"><h2>Prowlarr</h2><span class="arrow" aria-hidden="true">↗</span></span>
+          <img data-path="/Content/Images/logo.svg" alt="Prowlarr icon">
+          <p class="address"></p>
+        </a>
+
+        <a class="service" data-port="${TRANSMISSION_PORT}" data-path="/transmission/web/" target="_blank" rel="noreferrer">
+          <span class="service-heading"><h2>Transmission</h2><span class="arrow" aria-hidden="true">↗</span></span>
+          <img data-path="/transmission/web/images/favicon.svg" alt="Transmission icon">
+          <p class="address"></p>
+        </a>
+
+        <a class="service" data-port="${PLEX_PORT}" data-path="/web" target="_blank" rel="noreferrer">
+          <span class="service-heading"><h2>Plex</h2><span class="arrow" aria-hidden="true">↗</span></span>
+          <img data-path="/web/favicon.ico" alt="Plex icon">
+          <p class="address"></p>
+        </a>
+      </section>
+    </main>
+    <script>
+      const host = window.location.hostname.includes(":")
+        ? "[" + window.location.hostname + "]"
+        : window.location.hostname;
+
+      document.querySelectorAll(".service").forEach((service) => {
+        const origin = "http://" + host + ":" + service.dataset.port;
+        const path = service.dataset.path || "";
+        service.href = origin + path;
+        service.querySelector("img").src = origin + service.querySelector("img").dataset.path;
+        service.querySelector(".address").textContent = host + ":" + service.dataset.port + path;
+      });
+    </script>
+  </body>
+</html>
