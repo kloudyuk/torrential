@@ -35,7 +35,7 @@ Bootstrap identifies resources by their stack-owned meaning:
 - exact media root path
 - Transmission implementation and client name
 - Prowlarr application name and implementation
-- Prowlarr FlareSolverr proxy implementation and tag
+- Prowlarr Byparr proxy name and tag using the compatible FlareSolverr implementation
 - Plex library media type and root path
 - Plex notification implementation in Sonarr and Radarr
 - Seerr service name and internal endpoint
@@ -80,7 +80,7 @@ docker compose -f compose.yaml -f compose.dev.yaml logs --follow bootstrap
 Release tags in `vMAJOR.MINOR.PATCH` form run
 `.github/workflows/publish-bootstrap.yaml`, which publishes multi-platform
 `linux/amd64` and `linux/arm64` images. Each build receives an immutable full-version
-tag such as `v0.1.0` and updates its patch-floating minor tag such as `v0.1`.
+tag such as `v0.2.0` and updates its patch-floating minor tag such as `v0.2`.
 `compose.yaml` references the minor tag, and the workflow verifies that relationship
 before publishing. Full-version release tags must not be reused; the workflow refuses
 to replace one that already exists.
@@ -91,7 +91,7 @@ that visibility when changing package settings.
 The standard-library unit tests cover configuration validation, API-key discovery,
 provider schema handling, Transmission RPC negotiation, *Arr download-client and
 Plex-notification creation, Prowlarr application synchronization, Plex PIN
-authorization and token discovery, Prowlarr FlareSolverr proxy configuration, Plex
+authorization and token discovery, Prowlarr Byparr proxy configuration, Plex
 library reconciliation, and Seerr service and locale configuration. Compose smoke
 tests should use temporary `CONFIG_ROOT` and `DATA_ROOT` values so they never modify
 an operator's real state.

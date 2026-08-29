@@ -11,7 +11,7 @@ User
                 Prowlarr <--- indexers       import and rename
                    ^                                      |
                    |                                      v
-          FlareSolverr when tagged             /data/media/{tv,movies}
+              Byparr when tagged               /data/media/{tv,movies}
                                                           |
                    Sonarr/Radarr -- scan request --> Plex <+
 ```
@@ -21,7 +21,7 @@ succeeds, the same image runs once as the configuration coordinator. The coordin
 waits for the other services, performs Plex account authorization when needed,
 configures fixed paths, connections, and libraries, and exits.
 Gluetun supplies the only network namespace available to Transmission,
-Prowlarr, and FlareSolverr.
+Prowlarr, and Byparr.
 
 ## Ownership
 
@@ -32,7 +32,7 @@ Prowlarr, and FlareSolverr.
 | TV metadata, monitoring, release choice, import, and naming | Sonarr |
 | Movie metadata, monitoring, release choice, import, and naming | Radarr |
 | Indexers and manager synchronization | Prowlarr |
-| Browser challenges for explicitly tagged indexers | FlareSolverr |
+| Browser challenges for explicitly tagged indexers | Byparr |
 | Torrent transfer state and files | Transmission |
 | Library indexing, playback, and media-server users | Plex |
 | Plex first-run state | Plex startup hook |
@@ -87,7 +87,7 @@ these published ports may be exposed directly to the public internet. Set
 Dashboard links preserve the hostname or IP address used to open it. Plex's
 advertised server URL uses the operator-supplied `TORRENTIAL_HOST` and `PLEX_PORT`.
 
-Transmission, Prowlarr, and FlareSolverr unconditionally share Gluetun's network
+Transmission, Prowlarr, and Byparr unconditionally share Gluetun's network
 namespace and have no independent fallback route. Gluetun publishes the Transmission
 and Prowlarr management ports and provides their internal DNS aliases. Sonarr,
 Radarr, Seerr, and Plex remain on the normal Compose network. The coordinator shares
@@ -96,7 +96,7 @@ loopback; it still has normal Compose-network access and never inherits acquisit
 VPN routing. Plex remains directly reachable by LAN clients.
 
 The aliases mean other services still use `transmission:9091` and `prowlarr:9696`;
-those names resolve to Gluetun's namespace. Prowlarr reaches FlareSolverr through
+those names resolve to Gluetun's namespace. Prowlarr reaches Byparr through
 shared loopback at `127.0.0.1:8191`.
 
 ## Automation boundary
@@ -120,10 +120,11 @@ Policy-bearing choices supplied by the operator are:
 - Stable LAN IP address or local DNS name, selected in `.env`
 - Time zone and locale, selected in `.env`
 - Seerr quality profiles, selected by name in `.env`
-- Prowlarr indexers, credentials, tags, and FlareSolverr assignment
+- Prowlarr indexers, credentials, tags, and Byparr assignment
 - Sonarr/Radarr quality profiles, custom formats, and naming preferences
 
-Bootstrap creates the FlareSolverr proxy and its `flaresolverr` tag. The operator
-assigns that tag only to affected indexers. This boundary automates deterministic
-wiring without storing extra account credentials or guessing which sources the
-operator is authorized to use.
+Bootstrap creates a Prowlarr proxy named Byparr and its `byparr` tag. Prowlarr calls
+the compatible proxy implementation FlareSolverr. The operator assigns the tag only
+to affected indexers. This boundary automates deterministic wiring without storing
+extra account credentials or guessing which sources the operator is authorized to
+use.

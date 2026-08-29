@@ -10,10 +10,10 @@ its services as one Docker Compose deployment.
 | [Sonarr](https://sonarr.tv/) | TV acquisition, monitoring, import, and naming |
 | [Radarr](https://radarr.video/) | Movie acquisition, monitoring, import, and naming |
 | [Prowlarr](https://prowlarr.com/) | Indexer management and synchronization |
-| [FlareSolverr](https://github.com/FlareSolverr/FlareSolverr) | Best-effort browser-challenge proxy for affected indexers |
+| [Byparr](https://github.com/ThePhaseless/Byparr) | Best-effort browser-challenge proxy for affected indexers |
 | [Transmission](https://transmissionbt.com/) | BitTorrent downloads |
 | [Plex Media Server](https://www.plex.tv/media-server-downloads/) | Media libraries and playback |
-| [Gluetun](https://github.com/qdm12/gluetun) | Required VPN routing and kill switch for Transmission, Prowlarr, and FlareSolverr |
+| [Gluetun](https://github.com/qdm12/gluetun) | Required VPN routing and kill switch for Transmission, Prowlarr, and Byparr |
 | Bootstrap | Host-directory preparation, Plex authorization, and idempotent stack configuration |
 
 Use Torrential only with content and sources you are legally authorized to access.

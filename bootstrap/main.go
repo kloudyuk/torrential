@@ -34,7 +34,6 @@ func prepareDirectories(configuration config, configRoot string) error {
 		filepath.Join(configRoot, "seerr", "logs"),
 		filepath.Join(configRoot, "plex"),
 		filepath.Join(configRoot, "prowlarr"),
-		filepath.Join(configRoot, "flaresolverr"),
 		filepath.Join(configRoot, "transmission"),
 	}
 	directories = append(directories, dataDirectories(configuration)...)
@@ -92,11 +91,11 @@ func bootstrap(configuration config) error {
 		return err
 	}
 	logMessage("Prowlarr Radarr application " + state)
-	state, err = prowlarr.ensureFlareSolverrProxy()
+	state, err = prowlarr.ensureByparrProxy()
 	if err != nil {
 		return err
 	}
-	logMessage("Prowlarr FlareSolverr proxy " + state)
+	logMessage("Prowlarr Byparr proxy " + state)
 	if err := bootstrapPlexAndSeerr(
 		configuration.plex,
 		configuration.seerr,

@@ -7,7 +7,7 @@ instructions only to systems and traffic you are authorized to use.
 
 ### Goal
 
-Transmission, Prowlarr, and FlareSolverr must not reach the public internet except
+Transmission, Prowlarr, and Byparr must not reach the public internet except
 through the configured VPN. Torrential enforces this in its only supported Compose
 topology; relying on a host VPN route alone is insufficient.
 
@@ -76,15 +76,15 @@ docker compose down
 
 Important properties of this arrangement:
 
-- Transmission, Prowlarr, and FlareSolverr have no independent Compose network or
+- Transmission, Prowlarr, and Byparr have no independent Compose network or
   alternative default route.
 - Their outbound traffic uses Gluetun's network namespace and VPN firewall.
 - Transmission and Prowlarr management ports are published by `gluetun`, not by the
-  application containers. FlareSolverr remains internal-only.
+  application containers. Byparr remains internal-only.
 - Gluetun's `transmission` and `prowlarr` network aliases preserve stable access from
   Sonarr, Radarr, and bootstrap outside the VPN namespace.
-- Prowlarr reaches FlareSolverr at `http://127.0.0.1:8191` because they share one
-  network namespace. FlareSolverr has no externally reachable alias or host port.
+- Prowlarr reaches Byparr at `http://127.0.0.1:8191` because they share one network
+  namespace. Byparr has no externally reachable alias or host port.
 - `depends_on` handles startup order. Gluetun's firewall, rather than startup order,
   provides the runtime failure boundary.
 
@@ -96,7 +96,7 @@ in diagnostic output.
 
 - Transmission makes BitTorrent peer and tracker connections.
 - Prowlarr makes ordinary indexer requests.
-- For a tagged protected indexer, FlareSolverr's browser makes the challenged request
+- For a tagged protected indexer, Byparr's browser makes the challenged request
   on Prowlarr's behalf. Routing only Prowlarr would not protect that request.
 
 Do not put Sonarr, Radarr, Seerr, Plex, or bootstrap behind the VPN merely for
@@ -115,7 +115,7 @@ docker compose exec -T gluetun \
 
 The result must be the VPN public address, not the host ISP address. Also verify that
 Sonarr and Radarr can still reach Transmission using its stable internal URL. Test
-one tagged indexer and verify that Prowlarr reaches FlareSolverr through their shared
+one tagged indexer and verify that Prowlarr reaches Byparr through their shared
 namespace.
 
 Test the failure boundary before relying on it:
@@ -125,7 +125,7 @@ Test the failure boundary before relying on it:
    version.
 2. Confirm the diagnostic request fails rather than returning the host ISP address.
 3. Confirm Transmission cannot make progress during the outage and that any
-   VPN-routed FlareSolverr indexer test also fails closed.
+   VPN-routed Byparr indexer test also fails closed.
 4. Restore the VPN, verify the reported public address again, and confirm recovery.
 
 Do not treat a successful startup or one public-IP check as proof of a kill switch.

@@ -6,10 +6,11 @@ import (
 )
 
 const (
-	flareSolverrName    = "FlareSolverr"
-	flareSolverrTag     = "flaresolverr"
-	flareSolverrURL     = "http://127.0.0.1:8191"
-	flareSolverrTimeout = 60
+	byparrName                 = "Byparr"
+	byparrTag                  = "byparr"
+	byparrURL                  = "http://127.0.0.1:8191"
+	byparrTimeout              = 60
+	flareSolverrImplementation = "FlareSolverr"
 )
 
 type prowlarrTag struct {
@@ -17,8 +18,8 @@ type prowlarrTag struct {
 	Label string `json:"label"`
 }
 
-func (client *prowlarrClient) ensureFlareSolverrProxy() (string, error) {
-	tagID, err := client.ensureTag(flareSolverrTag)
+func (client *prowlarrClient) ensureByparrProxy() (string, error) {
+	tagID, err := client.ensureTag(byparrTag)
 	if err != nil {
 		return "", err
 	}
@@ -30,27 +31,27 @@ func (client *prowlarrClient) ensureFlareSolverrProxy() (string, error) {
 	if err := client.api.get("/api/v1/indexerProxy/schema", &schemas); err != nil {
 		return "", err
 	}
-	existing, err := selectExisting(proxies, flareSolverrName)
+	existing, err := selectExisting(proxies, byparrName)
 	if err != nil {
 		return "", err
 	}
-	schema := findImplementation(schemas, flareSolverrName)
+	schema := findImplementation(schemas, flareSolverrImplementation)
 	if schema == nil {
-		return "", fmt.Errorf("Prowlarr does not expose a %s indexer proxy schema", flareSolverrName)
+		return "", fmt.Errorf("Prowlarr does not expose a %s indexer proxy schema", flareSolverrImplementation)
 	}
 	base := schema
 	if existing != nil {
 		base = existing
 	}
 	fields, err := updateFields(base["fields"], map[string]any{
-		"host":           flareSolverrURL,
-		"requestTimeout": flareSolverrTimeout,
+		"host":           byparrURL,
+		"requestTimeout": byparrTimeout,
 	})
 	if err != nil {
 		return "", err
 	}
 	payload := cloneResource(base)
-	payload["name"] = flareSolverrName
+	payload["name"] = byparrName
 	payload["fields"] = fields
 	payload["tags"] = appendTag(resourceTagIDs(base["tags"]), tagID)
 

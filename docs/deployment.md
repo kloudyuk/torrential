@@ -34,7 +34,7 @@ change unexpectedly. This does not enable public remote access.
 `export` statements or manual sourcing.
 
 There is one supported topology. `compose.yaml` requires Gluetun and routes
-Transmission, Prowlarr, and FlareSolverr through it. Missing VPN credentials cause
+Transmission, Prowlarr, and Byparr through it. Missing VPN credentials cause
 Compose configuration to fail before any containers are created. The example selects
 NordVPN, but `VPN_SERVICE_PROVIDER`, `OPENVPN_USER`, and `OPENVPN_PASSWORD` use
 Gluetun's generic OpenVPN provider interface. Follow the selected provider's Gluetun
@@ -93,7 +93,7 @@ Plex startup and bootstrap perform these convergent operations:
 - adds `/data/media/tv` to Sonarr and `/data/media/movies` to Radarr;
 - registers Transmission in Sonarr and Radarr with separate categories;
 - registers Sonarr and Radarr as full-sync Prowlarr applications;
-- creates a tagged FlareSolverr indexer proxy in Prowlarr;
+- creates a tagged Byparr browser-challenge proxy in Prowlarr;
 - marks Plex's first-run server setup complete before Plex starts;
 - uses one Plex authorization to claim a new Plex server and create Seerr's initial
   administrator;
@@ -140,10 +140,15 @@ Open Prowlarr and add only indexers and sources the operator is authorized to us
 Prowlarr automatically synchronizes compatible indexers to Sonarr and Radarr because
 bootstrap has already registered both applications.
 
-Bootstrap creates a FlareSolverr indexer proxy using `http://127.0.0.1:8191` and the
-`flaresolverr` tag. Prowlarr and FlareSolverr share Gluetun's network namespace, so
-loopback is the correct address. Assign the `flaresolverr` tag only to affected
-indexers. FlareSolverr is best-effort and cannot guarantee bypass of every challenge.
+Bootstrap creates a Prowlarr proxy named Byparr using `http://127.0.0.1:8191` and the
+`byparr` tag. Prowlarr exposes this compatible API integration under its FlareSolverr
+proxy type. Prowlarr and Byparr share Gluetun's network namespace, so loopback is the
+correct address. Assign the `byparr` tag only to affected indexers. Byparr is
+best-effort and cannot guarantee bypass of every challenge.
+
+While testing a new, unsaved indexer, Prowlarr may try the available compatible
+proxy before a tag has been assigned. After the indexer is saved, normal tag matching
+controls whether its requests use Byparr.
 
 ## Routine operation
 

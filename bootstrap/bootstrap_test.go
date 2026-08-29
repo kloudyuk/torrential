@@ -149,7 +149,6 @@ func TestPrepareDirectoriesCreatesServiceAndDataPaths(t *testing.T) {
 		filepath.Join(configRoot, "seerr", "logs"),
 		filepath.Join(configRoot, "plex"),
 		filepath.Join(configRoot, "prowlarr"),
-		filepath.Join(configRoot, "flaresolverr"),
 		filepath.Join(configRoot, "transmission"),
 		configuration.directories.incomplete,
 		filepath.Join(configuration.directories.complete, "sonarr"),
@@ -784,18 +783,22 @@ func TestProwlarrCreatesFullSyncApplication(t *testing.T) {
 	assertEqual(t, fields["apiKey"], "sonarr-key")
 }
 
-func TestProwlarrCreatesFlareSolverrProxyAndTag(t *testing.T) {
+func TestProwlarrCreatesByparrProxyAndTag(t *testing.T) {
+	var tagPayload prowlarrTag
 	var proxyPayload providerResource
 	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		switch request.Method + " " + request.URL.Path {
 		case "GET /api/v1/tag":
 			writeJSON(t, writer, []any{})
 		case "POST /api/v1/tag":
-			writeJSON(t, writer, map[string]any{"id": 7, "label": "flaresolverr"})
+			if err := json.NewDecoder(request.Body).Decode(&tagPayload); err != nil {
+				t.Error(err)
+			}
+			writeJSON(t, writer, map[string]any{"id": 7, "label": "byparr"})
 		case "GET /api/v1/indexerProxy":
 			writeJSON(t, writer, []any{})
 		case "GET /api/v1/indexerProxy/schema":
-			writeJSON(t, writer, []any{flareSolverrSchema()})
+			writeJSON(t, writer, []any{byparrProxySchema()})
 		case "POST /api/v1/indexerProxy":
 			if err := json.NewDecoder(request.Body).Decode(&proxyPayload); err != nil {
 				t.Error(err)
@@ -808,19 +811,20 @@ func TestProwlarrCreatesFlareSolverrProxyAndTag(t *testing.T) {
 	defer server.Close()
 
 	client := newProwlarrClient(serviceConfig{baseURL: server.URL}, "prowlarr-key", time.Second)
-	state, err := client.ensureFlareSolverrProxy()
+	state, err := client.ensureByparrProxy()
 	if err != nil {
 		t.Fatal(err)
 	}
 	assertEqual(t, state, "created")
-	assertEqual(t, proxyPayload["name"], "FlareSolverr")
+	assertEqual(t, tagPayload.Label, "byparr")
+	assertEqual(t, proxyPayload["name"], "Byparr")
 	assertEqual(t, proxyPayload["tags"], []any{float64(7)})
 	fields := fieldsByName(t, proxyPayload["fields"])
 	assertEqual(t, fields["host"], "http://127.0.0.1:8191")
 	assertEqual(t, fields["requestTimeout"], float64(60))
 }
 
-func flareSolverrSchema() map[string]any {
+func byparrProxySchema() map[string]any {
 	return map[string]any{
 		"implementation": "FlareSolverr",
 		"fields": []any{
