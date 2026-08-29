@@ -61,11 +61,16 @@ queries to the host network.
 
 After configuring `.env` as described in [Deployment and setup](deployment.md), start
 the stack in the background and follow only the bootstrap log. On a new deployment,
-approve the single Plex authorization URL shown there. Stop with ordinary Compose:
+approve the single Plex authorization URL shown there:
 
 ```bash
 docker compose up -d
 docker compose logs --follow bootstrap
+```
+
+When you want to stop the stack:
+
+```bash
 docker compose down
 ```
 

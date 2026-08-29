@@ -67,22 +67,23 @@ and returns when it exits. Initialization or coordinator failures are visible wi
 Successful bootstrap ends with a clearly marked completion banner containing the
 dashboard URL built from `TORRENTIAL_HOST` and `DASHBOARD_PORT`.
 
-The dashboard remains available from the Docker host at <http://127.0.0.1>. Its six
-service links use whichever hostname or IP address opened the dashboard and the
-corresponding configured ports. The stack binds these interfaces to the LAN by
-default; set `WEB_BIND_ADDRESS=127.0.0.1` for host-only access. Change
-`DASHBOARD_PORT` if host port 80 is already in use. Do not expose any stack ports
-directly to the public internet. The bundled dashboard serves plain HTTP; Torrential
-does not manage local TLS certificates or HTTPS termination.
+Open the dashboard URL from bootstrap's completion banner. Its six service links use
+whichever hostname or IP address opened the dashboard and the corresponding configured
+ports. The stack binds these interfaces to the LAN by default; set
+`WEB_BIND_ADDRESS=127.0.0.1` for host-only access. Change `DASHBOARD_PORT` if host port
+80 is already in use. Do not expose any stack ports directly to the public internet.
+The bundled dashboard serves plain HTTP; Torrential does not manage local TLS
+certificates or HTTPS termination.
 
 On a fresh deployment, bootstrap prints one `app.plex.tv` authorization URL in the
 followed coordinator log. Open it, sign in to the Plex account that will own the
-server, and approve Torrential. The
-coordinator continues automatically; no credential needs to be copied. The
+server, and approve Torrential. The coordinator continues automatically; no
+credential needs to be copied. The
 authorization request expires after 15 minutes. Run `docker compose up -d` again to
-generate a new one if necessary, then follow `docker compose logs --follow bootstrap`.
-Plex's page can show a generic completion error after successful approval; the
-bootstrap output is authoritative. Existing completed deployments skip this step.
+ensure the stack is running, then retry the coordinator directly with
+`docker compose run --rm --no-deps bootstrap`. Plex's page can show a generic
+completion error after successful approval; the bootstrap output is authoritative.
+Existing completed deployments skip this step.
 
 Plex startup and bootstrap perform these convergent operations:
 
@@ -103,9 +104,15 @@ Plex startup and bootstrap perform these convergent operations:
 - connects Seerr to Plex, enables both libraries, and adds Sonarr and Radarr as its
   default services using the configured quality profiles.
 
-Rerunning it updates fixed connection fields and reuses matching resources rather
-than creating duplicates. Locale and the stack-owned service connections are
-reconciled from `.env`; unrelated manual configuration remains untouched.
+Rerunning bootstrap updates fixed connection fields and reuses matching resources
+rather than creating duplicates. With the stack running, deliberately reconcile
+changes to locale, quality-profile selection, or stack-owned connections with:
+
+```sh
+docker compose run --rm --no-deps bootstrap
+```
+
+Unrelated manual configuration remains untouched.
 
 ## Automated onboarding
 
@@ -152,9 +159,10 @@ configured authenticated reverse proxy.
 Common lifecycle commands are:
 
 ```sh
+docker compose up -d
 docker compose ps --all
 docker compose logs bootstrap
-docker compose up -d
+docker compose run --rm --no-deps bootstrap
 docker compose down
 ```
 

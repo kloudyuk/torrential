@@ -24,7 +24,7 @@ the operator-facing host and ports, and the shared configuration and data mounts
 Generated API keys and Plex's server token are read from those files and used only in
 memory.
 
-The `init` service changes only directory creation, mode, and ownership. The
+The `init` service changes only directory creation and ownership. The
 coordinator reads generated configuration but makes application changes through HTTP
 APIs; it never edits a service configuration file or database.
 
@@ -85,13 +85,13 @@ tag such as `v0.1.0` and updates its patch-floating minor tag such as `v0.1`.
 before publishing. Full-version release tags must not be reused; the workflow refuses
 to replace one that already exists.
 
-After publishing the package for the first time, set its GHCR visibility to public
-in the GitHub package settings. Public GHCR images can then be pulled anonymously by
-Torrential deployments.
+The GHCR package is public so Torrential deployments can pull it anonymously. Preserve
+that visibility when changing package settings.
 
 The standard-library unit tests cover configuration validation, API-key discovery,
-provider schema handling, Transmission RPC negotiation, *Arr download-client
-and Plex-notification creation, Prowlarr application synchronization, Plex PIN authorization and token
-discovery, Prowlarr FlareSolverr proxy configuration, Plex library reconciliation,
-and Seerr service and locale configuration. Compose smoke tests should use temporary
-`CONFIG_ROOT` and `DATA_ROOT` values so they never modify an operator's real state.
+provider schema handling, Transmission RPC negotiation, *Arr download-client and
+Plex-notification creation, Prowlarr application synchronization, Plex PIN
+authorization and token discovery, Prowlarr FlareSolverr proxy configuration, Plex
+library reconciliation, and Seerr service and locale configuration. Compose smoke
+tests should use temporary `CONFIG_ROOT` and `DATA_ROOT` values so they never modify
+an operator's real state.

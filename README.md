@@ -55,19 +55,9 @@ is no token to copy or store. Follow the terminal output after approval; Plex's
 authorization page can display a generic completion error even after approval
 succeeds. Subsequent starts do not prompt again.
 
-Open the default interfaces from the Docker host:
-
-- Dashboard: <http://127.0.0.1>
-- Seerr: <http://127.0.0.1:5055>
-- Plex: <http://127.0.0.1:32400/web>
-- Sonarr: <http://127.0.0.1:8989>
-- Radarr: <http://127.0.0.1:7878>
-- Prowlarr: <http://127.0.0.1:9696>
-- Transmission: <http://127.0.0.1:9091/transmission/web/>
-
-From another LAN device, replace `127.0.0.1` with the Docker host's LAN address or a
-DNS name that resolves to it. The dashboard uses whichever hostname or IP address
-opened it, together with each service's configured port, for all links.
+Open the dashboard URL printed in the completion banner. It provides links to all six
+service interfaces, using whichever hostname or IP address opened the dashboard and
+each service's configured port.
 
 Bootstrap creates the shared data directories, configures Transmission, connects the
 manager and indexer services, creates the Plex libraries, and configures Seerr with
