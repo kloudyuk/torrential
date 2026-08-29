@@ -31,7 +31,7 @@ func (client *prowlarrClient) ensureByparrProxy() (string, error) {
 	if err := client.api.get("/api/v1/indexerProxy/schema", &schemas); err != nil {
 		return "", err
 	}
-	existing, err := selectExisting(proxies, byparrName)
+	existing, err := selectNamedImplementation(proxies, byparrName, flareSolverrImplementation)
 	if err != nil {
 		return "", err
 	}
@@ -66,6 +66,23 @@ func (client *prowlarrClient) ensureByparrProxy() (string, error) {
 		return "", err
 	}
 	return "created", nil
+}
+
+func selectNamedImplementation(resources []providerResource, name, implementation string) (providerResource, error) {
+	var matches []providerResource
+	for _, resource := range resources {
+		if strings.EqualFold(strings.TrimSpace(resourceString(resource, "name")), strings.TrimSpace(name)) &&
+			strings.EqualFold(strings.TrimSpace(resourceString(resource, "implementation")), strings.TrimSpace(implementation)) {
+			matches = append(matches, resource)
+		}
+	}
+	if len(matches) > 1 {
+		return nil, fmt.Errorf("found %d existing %s proxies", len(matches), name)
+	}
+	if len(matches) == 1 {
+		return matches[0], nil
+	}
+	return nil, nil
 }
 
 func (client *prowlarrClient) ensureTag(label string) (int, error) {

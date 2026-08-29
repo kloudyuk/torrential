@@ -42,6 +42,19 @@ func TestLoadConfigDefaults(t *testing.T) {
 	assertEqual(t, configuration.startupTimeout, 300*time.Second)
 }
 
+func TestAPIClientIncludesErrorResponseBody(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		http.Error(writer, "Name: Should be unique", http.StatusBadRequest)
+	}))
+	defer server.Close()
+
+	client := newAPIClient(server.URL, "api-key", time.Second)
+	err := client.post("/api/v1/indexerProxy", map[string]any{"name": "Byparr"}, nil)
+	if err == nil || !strings.Contains(err.Error(), "Name: Should be unique") {
+		t.Fatalf("expected response body in error, got %v", err)
+	}
+}
+
 func TestLoadConfigRequiresTorrentialHost(t *testing.T) {
 	_, err := loadConfig(func(string) (string, bool) { return "", false })
 	if err == nil || !strings.Contains(err.Error(), "TORRENTIAL_HOST is required") {
@@ -817,6 +830,52 @@ func TestProwlarrCreatesByparrProxyAndTag(t *testing.T) {
 	}
 	assertEqual(t, state, "created")
 	assertEqual(t, tagPayload.Label, "byparr")
+	assertEqual(t, proxyPayload["name"], "Byparr")
+	assertEqual(t, proxyPayload["tags"], []any{float64(7)})
+	fields := fieldsByName(t, proxyPayload["fields"])
+	assertEqual(t, fields["host"], "http://127.0.0.1:8191")
+	assertEqual(t, fields["requestTimeout"], float64(60))
+}
+
+func TestProwlarrUpdatesExistingByparrProxyReportedAsFlareSolverr(t *testing.T) {
+	var proxyPayload providerResource
+	server := httptest.NewServer(http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+		switch request.Method + " " + request.URL.Path {
+		case "GET /api/v1/tag":
+			writeJSON(t, writer, []any{map[string]any{"id": 7, "label": "byparr"}})
+		case "GET /api/v1/indexerProxy":
+			writeJSON(t, writer, []any{map[string]any{
+				"id":             12,
+				"name":           "Byparr",
+				"implementation": "FlareSolverr",
+				"fields": []any{
+					map[string]any{"name": "host", "value": "http://old:8191"},
+					map[string]any{"name": "requestTimeout", "value": 30},
+				},
+				"tags": []any{},
+			}})
+		case "GET /api/v1/indexerProxy/schema":
+			writeJSON(t, writer, []any{byparrProxySchema()})
+		case "PUT /api/v1/indexerProxy/12":
+			if err := json.NewDecoder(request.Body).Decode(&proxyPayload); err != nil {
+				t.Error(err)
+			}
+			writer.WriteHeader(http.StatusAccepted)
+		case "POST /api/v1/indexerProxy":
+			t.Error("bootstrap attempted to create a duplicate Byparr proxy")
+			http.Error(writer, "duplicate", http.StatusBadRequest)
+		default:
+			http.NotFound(writer, request)
+		}
+	}))
+	defer server.Close()
+
+	client := newProwlarrClient(serviceConfig{baseURL: server.URL}, "prowlarr-key", time.Second)
+	state, err := client.ensureByparrProxy()
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertEqual(t, state, "updated")
 	assertEqual(t, proxyPayload["name"], "Byparr")
 	assertEqual(t, proxyPayload["tags"], []any{float64(7)})
 	fields := fieldsByName(t, proxyPayload["fields"])

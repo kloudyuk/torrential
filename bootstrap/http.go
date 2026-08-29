@@ -59,6 +59,14 @@ func (client *apiClient) request(method, path string, body, result any) error {
 	}
 	defer response.Body.Close()
 	if response.StatusCode < 200 || response.StatusCode >= 300 {
+		data, readErr := io.ReadAll(io.LimitReader(response.Body, 64<<10))
+		if readErr != nil {
+			return fmt.Errorf("%s%s returned HTTP %d (read response: %v)", client.baseURL, path, response.StatusCode, readErr)
+		}
+		message := strings.TrimSpace(string(data))
+		if message != "" {
+			return fmt.Errorf("%s%s returned HTTP %d: %s", client.baseURL, path, response.StatusCode, message)
+		}
 		return fmt.Errorf("%s%s returned HTTP %d", client.baseURL, path, response.StatusCode)
 	}
 	if result == nil || response.StatusCode == http.StatusNoContent {
