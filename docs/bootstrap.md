@@ -80,7 +80,7 @@ docker compose -f compose.yaml -f compose.dev.yaml logs --follow bootstrap
 Release tags in `vMAJOR.MINOR.PATCH` form run
 `.github/workflows/publish-bootstrap.yaml`, which publishes multi-platform
 `linux/amd64` and `linux/arm64` images with an immutable full-version tag such as
-`v0.2.2`. `compose.yaml` references that exact tag, and the workflow verifies both
+`v0.3.0`. `compose.yaml` references that exact tag, and the workflow verifies both
 bootstrap services before publishing. Release tags must not be reused; the workflow
 refuses to replace an image that already exists.
 

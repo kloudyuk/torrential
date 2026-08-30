@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">Torrential</title>
+  <desc id="desc">A letter T flowing into two waves</desc>
+  <defs>
+    <linearGradient id="flow" x1="112" y1="112" x2="400" y2="400" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#9b8cff"/>
+      <stop offset="1" stop-color="#36d1b8"/>
+    </linearGradient>
+  </defs>
+  <rect width="512" height="512" rx="112" fill="#131a2b"/>
+  <path d="M142 142h228M256 151v171m-55-52 55 55 55-55" fill="none" stroke="url(#flow)" stroke-width="38" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M112 365c34-25 68-25 102 0s68 25 102 0 68-25 102 0" fill="none" stroke="url(#flow)" stroke-width="28" stroke-linecap="round"/>
+  <path d="M133 414c27-18 54-18 81 0s54 18 81 0 54-18 81 0" fill="none" stroke="#36d1b8" stroke-width="20" stroke-linecap="round" opacity=".72"/>
+</svg>

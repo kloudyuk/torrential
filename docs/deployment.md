@@ -69,7 +69,10 @@ dashboard URL built from `TORRENTIAL_HOST` and `DASHBOARD_PORT`.
 
 Open the dashboard URL from bootstrap's completion banner. Its six service links use
 whichever hostname or IP address opened the dashboard and the corresponding configured
-ports. The stack binds these interfaces to the LAN by default; set
+ports. Each card polls a same-origin Nginx readiness proxy and reports whether that
+application is available; the dashboard does not receive access to the Docker API.
+The card icons and Torrential favicon are bundled SVG assets and render locally.
+The stack binds these interfaces to the LAN by default; set
 `WEB_BIND_ADDRESS=127.0.0.1` for host-only access. Change `DASHBOARD_PORT` if host port
 80 is already in use. Do not expose any stack ports directly to the public internet.
 The bundled dashboard serves plain HTTP; Torrential does not manage local TLS

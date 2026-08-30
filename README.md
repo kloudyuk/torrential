@@ -1,7 +1,26 @@
-# Torrential
+<h1>
+  <img src="assets/icons/torrential.svg" width="52" alt="Torrential logo" align="absmiddle">
+  Torrential
+</h1>
 
-Torrential is an opinionated, self-hosted TV and movie acquisition stack. It packages
-its services as one Docker Compose deployment.
+Torrential turns a collection of media-management applications into one deployable,
+ready-to-use TV and movie acquisition stack. It removes the repetitive work of
+installing each service separately, connecting them to one another, and remembering
+where every interface lives.
+
+It does three things:
+
+- brings the \*arr applications and their supporting services together in one Docker
+  Compose deployment;
+- automatically prepares storage and configures the services to work together,
+  including Transmission, Plex, Seerr, download paths, libraries, and notifications;
+- provides a local dashboard with links to every user-facing interface and their
+  current availability.
+
+Once running, Seerr is the main place to discover and request TV shows and movies.
+Sonarr and Radarr manage acquisition and organization, Prowlarr supplies their
+operator-selected indexers, Transmission performs downloads through the VPN, and
+Plex serves the completed media.
 
 | Service | Responsibility |
 | --- | --- |
@@ -57,7 +76,8 @@ succeeds. Subsequent starts do not prompt again.
 
 Open the dashboard URL printed in the completion banner. It provides links to all six
 service interfaces, using whichever hostname or IP address opened the dashboard and
-each service's configured port.
+each service's configured port. Every card also reports whether its application is
+currently responding.
 
 Bootstrap creates the shared data directories, configures Transmission, connects the
 manager and indexer services, creates the Plex libraries, and configures Seerr with
@@ -91,3 +111,5 @@ See [Architecture](docs/architecture.md), [Bootstrap](docs/bootstrap.md), and
 ## License
 
 Torrential is available under the [MIT License](LICENSE).
+Third-party dashboard marks and their licensing are documented in
+[icon attribution](assets/icons/NOTICE.md).

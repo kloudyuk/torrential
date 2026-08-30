@@ -4,6 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="color-scheme" content="dark">
+    <meta name="theme-color" content="#131a2b">
+    <link rel="icon" href="/icons/torrential.svg" type="image/svg+xml">
     <title>Torrential</title>
     <style>
       :root {
@@ -33,7 +35,16 @@
       }
 
       header {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
         margin-bottom: 2rem;
+      }
+
+      .brand-icon {
+        width: clamp(3.5rem, 8vw, 5rem);
+        height: clamp(3.5rem, 8vw, 5rem);
+        flex: none;
       }
 
       h1 {
@@ -88,6 +99,49 @@
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
+      }
+
+      .service-meta,
+      .service-state {
+        display: flex;
+        align-items: center;
+      }
+
+      .service-meta {
+        gap: 0.8rem;
+      }
+
+      .service-state {
+        gap: 0.4rem;
+        color: #98a2b7;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      .status-dot {
+        width: 0.55rem;
+        height: 0.55rem;
+        background: #697386;
+        border-radius: 50%;
+        box-shadow: 0 0 0 0.2rem rgba(105, 115, 134, 0.14);
+      }
+
+      .service[data-health-state="available"] .service-state {
+        color: #62d6a7;
+      }
+
+      .service[data-health-state="available"] .status-dot {
+        background: #43c993;
+        box-shadow: 0 0 0 0.2rem rgba(67, 201, 147, 0.14);
+      }
+
+      .service[data-health-state="unavailable"] .service-state {
+        color: #ff858d;
+      }
+
+      .service[data-health-state="unavailable"] .status-dot {
+        background: #f05f69;
+        box-shadow: 0 0 0 0.2rem rgba(240, 95, 105, 0.14);
       }
 
       h2 {
@@ -145,44 +199,83 @@
   <body>
     <main>
       <header>
-        <h1>Torrential</h1>
-        <p>Your local media stack.</p>
+        <img class="brand-icon" src="/icons/torrential.svg" alt="">
+        <div>
+          <h1>Torrential</h1>
+          <p>Your local media stack.</p>
+        </div>
       </header>
 
       <section class="services" aria-label="Media services">
-        <a class="service" data-port="${SEERR_PORT}" target="_blank" rel="noreferrer">
-          <span class="service-heading"><h2>Seerr</h2><span class="arrow" aria-hidden="true">↗</span></span>
-          <img data-path="/logo_stacked.svg" alt="Seerr icon">
+        <a class="service" data-port="${SEERR_PORT}" data-health="seerr" data-health-state="checking" target="_blank" rel="noreferrer">
+          <span class="service-heading">
+            <h2>Seerr</h2>
+            <span class="service-meta">
+              <span class="service-state" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span class="status-label">Checking</span></span>
+              <span class="arrow" aria-hidden="true">↗</span>
+            </span>
+          </span>
+          <img src="/icons/seerr.svg" alt="Seerr icon">
           <p class="address"></p>
         </a>
 
-        <a class="service" data-port="${SONARR_PORT}" target="_blank" rel="noreferrer">
-          <span class="service-heading"><h2>Sonarr</h2><span class="arrow" aria-hidden="true">↗</span></span>
-          <img data-path="/Content/Images/logo.svg" alt="Sonarr icon">
+        <a class="service" data-port="${SONARR_PORT}" data-health="sonarr" data-health-state="checking" target="_blank" rel="noreferrer">
+          <span class="service-heading">
+            <h2>Sonarr</h2>
+            <span class="service-meta">
+              <span class="service-state" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span class="status-label">Checking</span></span>
+              <span class="arrow" aria-hidden="true">↗</span>
+            </span>
+          </span>
+          <img src="/icons/sonarr.svg" alt="Sonarr icon">
           <p class="address"></p>
         </a>
 
-        <a class="service" data-port="${RADARR_PORT}" target="_blank" rel="noreferrer">
-          <span class="service-heading"><h2>Radarr</h2><span class="arrow" aria-hidden="true">↗</span></span>
-          <img data-path="/Content/Images/logo.svg" alt="Radarr icon">
+        <a class="service" data-port="${RADARR_PORT}" data-health="radarr" data-health-state="checking" target="_blank" rel="noreferrer">
+          <span class="service-heading">
+            <h2>Radarr</h2>
+            <span class="service-meta">
+              <span class="service-state" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span class="status-label">Checking</span></span>
+              <span class="arrow" aria-hidden="true">↗</span>
+            </span>
+          </span>
+          <img src="/icons/radarr.svg" alt="Radarr icon">
           <p class="address"></p>
         </a>
 
-        <a class="service" data-port="${PROWLARR_PORT}" target="_blank" rel="noreferrer">
-          <span class="service-heading"><h2>Prowlarr</h2><span class="arrow" aria-hidden="true">↗</span></span>
-          <img data-path="/Content/Images/logo.svg" alt="Prowlarr icon">
+        <a class="service" data-port="${PROWLARR_PORT}" data-health="prowlarr" data-health-state="checking" target="_blank" rel="noreferrer">
+          <span class="service-heading">
+            <h2>Prowlarr</h2>
+            <span class="service-meta">
+              <span class="service-state" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span class="status-label">Checking</span></span>
+              <span class="arrow" aria-hidden="true">↗</span>
+            </span>
+          </span>
+          <img src="/icons/prowlarr.svg" alt="Prowlarr icon">
           <p class="address"></p>
         </a>
 
-        <a class="service" data-port="${TRANSMISSION_PORT}" data-path="/transmission/web/" target="_blank" rel="noreferrer">
-          <span class="service-heading"><h2>Transmission</h2><span class="arrow" aria-hidden="true">↗</span></span>
-          <img data-path="/transmission/web/images/favicon.svg" alt="Transmission icon">
+        <a class="service" data-port="${TRANSMISSION_PORT}" data-path="/transmission/web/" data-health="transmission" data-health-state="checking" target="_blank" rel="noreferrer">
+          <span class="service-heading">
+            <h2>Transmission</h2>
+            <span class="service-meta">
+              <span class="service-state" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span class="status-label">Checking</span></span>
+              <span class="arrow" aria-hidden="true">↗</span>
+            </span>
+          </span>
+          <img src="/icons/transmission.svg" alt="Transmission icon">
           <p class="address"></p>
         </a>
 
-        <a class="service" data-port="${PLEX_PORT}" data-path="/web" target="_blank" rel="noreferrer">
-          <span class="service-heading"><h2>Plex</h2><span class="arrow" aria-hidden="true">↗</span></span>
-          <img data-path="/web/favicon.ico" alt="Plex icon">
+        <a class="service" data-port="${PLEX_PORT}" data-path="/web" data-health="plex" data-health-state="checking" target="_blank" rel="noreferrer">
+          <span class="service-heading">
+            <h2>Plex</h2>
+            <span class="service-meta">
+              <span class="service-state" aria-live="polite"><span class="status-dot" aria-hidden="true"></span><span class="status-label">Checking</span></span>
+              <span class="arrow" aria-hidden="true">↗</span>
+            </span>
+          </span>
+          <img src="/icons/plex.svg" alt="Plex icon">
           <p class="address"></p>
         </a>
       </section>
@@ -196,9 +289,39 @@
         const origin = "http://" + host + ":" + service.dataset.port;
         const path = service.dataset.path || "";
         service.href = origin + path;
-        service.querySelector("img").src = origin + service.querySelector("img").dataset.path;
         service.querySelector(".address").textContent = host + ":" + service.dataset.port + path;
       });
+
+      const healthServices = Array.from(document.querySelectorAll(".service[data-health]"));
+
+      async function checkHealth(service) {
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 6000);
+
+        try {
+          const response = await fetch("/health/" + service.dataset.health, {
+            cache: "no-store",
+            signal: controller.signal,
+          });
+          if (!response.ok) {
+            throw new Error("Health endpoint returned " + response.status);
+          }
+          service.dataset.healthState = "available";
+          service.querySelector(".status-label").textContent = "Available";
+        } catch (_error) {
+          service.dataset.healthState = "unavailable";
+          service.querySelector(".status-label").textContent = "Unavailable";
+        } finally {
+          window.clearTimeout(timeout);
+        }
+      }
+
+      function checkAllHealth() {
+        healthServices.forEach(checkHealth);
+      }
+
+      checkAllHealth();
+      window.setInterval(checkAllHealth, 30000);
     </script>
   </body>
 </html>

@@ -86,6 +86,10 @@ these published ports may be exposed directly to the public internet. Set
 `WEB_BIND_ADDRESS=127.0.0.1` to restrict every interface to the host instead.
 Dashboard links preserve the hostname or IP address used to open it. Plex's
 advertised server URL uses the operator-supplied `TORRENTIAL_HOST` and `PLEX_PORT`.
+The dashboard proxies fixed, read-only readiness requests to its six linked services
+and displays application availability without mounting the Docker socket. Its service
+marks and Torrential favicon are bundled SVG assets, so they remain sharp and do not
+depend on another service or an internet connection to render.
 
 Transmission, Prowlarr, and Byparr unconditionally share Gluetun's network
 namespace and have no independent fallback route. Gluetun publishes the Transmission
