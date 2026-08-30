@@ -56,27 +56,38 @@ docker compose up -d
 docker compose logs --follow bootstrap
 ```
 
-Compose downloads missing service images, including Torrential's prebuilt bootstrap
+Compose downloads missing service images, including Torrential's prebuilt Go runtime
 image. A one-shot `init` service creates `CONFIG_ROOT`, `DATA_ROOT`, and their
 required subdirectories with the configured `PUID` and `PGID`. Plex and the
 configuration coordinator start only after it succeeds. The coordinator then waits
 for the other service files and APIs, performs the idempotent configuration, and
-exits. The services run detached; the second command follows only the coordinator
-and returns when it exits. Initialization or coordinator failures are visible with
+exits. The long-running controller starts only after that successful exit. The
+services run detached; the second command follows only the coordinator and returns
+when it exits. Initialization or coordinator failures are visible with
 `docker compose logs init bootstrap` and `docker compose ps --all`.
 Successful bootstrap ends with a clearly marked completion banner containing the
 dashboard URL built from `TORRENTIAL_HOST` and `DASHBOARD_PORT`.
 
 Open the dashboard URL from bootstrap's completion banner. Its six service links use
 whichever hostname or IP address opened the dashboard and the corresponding configured
-ports. Each card polls a same-origin Nginx readiness proxy and reports whether that
-application is available; the dashboard does not receive access to the Docker API.
-The card icons and Torrential favicon are bundled SVG assets and render locally.
+ports. Each card shows the container state, Docker health, and uptime and offers a
+restart button. The dashboard's same-origin API is backed by an internal controller;
+Nginx itself has no Docker access. The card icons and Torrential favicon are bundled
+SVG assets and render locally.
+
 The stack binds these interfaces to the LAN by default; set
 `WEB_BIND_ADDRESS=127.0.0.1` for host-only access. Change `DASHBOARD_PORT` if host port
 80 is already in use. Do not expose any stack ports directly to the public internet.
 The bundled dashboard serves plain HTTP; Torrential does not manage local TLS
 certificates or HTTPS termination.
+
+The dashboard is intentionally unauthenticated for trusted-LAN use. Anyone who can
+reach it can request an allowlisted container restart, so do not expose it publicly.
+The controller is not published to the host and accepts only the six card-level
+restarts or the predefined stack sequence. Restarting the stack from the dashboard
+restarts Gluetun and waits for VPN health, then the VPN-routed applications, then the
+remaining media applications. It leaves the dashboard, controller, init, and
+bootstrap containers untouched.
 
 On a fresh deployment, bootstrap prints one `app.plex.tv` authorization URL in the
 followed coordinator log. Open it, sign in to the Plex account that will own the
@@ -193,12 +204,12 @@ container remains exited.
 
 Third-party images use patch-floating major/minor tags where the publisher provides
 them. Publishers that expose only full application-version tags use the narrowest
-available stable tag without a digest. Torrential's own bootstrap image is pinned to
+available stable tag without a digest. Torrential's own Go runtime image is pinned to
 the exact release matching `compose.yaml`, so a repository update cannot accidentally
-run against a different bootstrap build. Review minor and major version changes one
-service at a time, validate the Compose topology and VPN failure boundary, run
-bootstrap tests, and record any manual migration requirement. Update the repository
-and pull images before applying an upgrade:
+run its init, bootstrap, or controller modes against a different build. Review minor
+and major version changes one service at a time, validate the Compose topology and
+VPN failure boundary, run bootstrap tests, and record any manual migration
+requirement. Update the repository and pull images before applying an upgrade:
 
 ```sh
 git pull --ff-only

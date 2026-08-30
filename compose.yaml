@@ -23,7 +23,6 @@ services:
     volumes:
       - ./dashboard/index.html.template:/etc/nginx/templates/index.html.template:ro
       - ./dashboard/default.conf:/etc/nginx/conf.d/default.conf:ro
-      - ./dashboard/health-proxy.conf:/etc/nginx/health-proxy.conf:ro
       - ./assets/icons:/usr/share/nginx/html/icons:ro
     healthcheck:
       test: ["CMD", "wget", "--quiet", "--spider", "http://127.0.0.1/"]
@@ -66,8 +65,8 @@ services:
           - prowlarr
 
   init:
-    # One-shot filesystem initialization using Torrential bootstrap 0.3.
-    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.3.1
+    # One-shot filesystem initialization using Torrential runtime 1.0.
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v1.0.0
     restart: "no"
     user: "0:0"
     command: ["prepare"]
@@ -84,8 +83,8 @@ services:
       disable: true
 
   bootstrap:
-    # One-shot configuration coordinator using Torrential bootstrap 0.3.
-    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.3.1
+    # One-shot configuration coordinator using Torrential runtime 1.0.
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v1.0.0
     restart: "no"
     user: "0:0"
     network_mode: "service:plex"
@@ -120,6 +119,32 @@ services:
         condition: service_started
     healthcheck:
       disable: true
+
+  controller:
+    # Long-running, allowlisted Docker status and restart controller.
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v1.0.0
+    command: ["controller"]
+    restart: unless-stopped
+    user: "0:0"
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    environment:
+      DOCKER_SOCKET: /var/run/docker.sock
+      TORRENTIAL_COMPOSE_PROJECT: ${COMPOSE_PROJECT_NAME:-torrential}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    depends_on:
+      bootstrap:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "/bootstrap", "probe"]
+      interval: 10s
+      timeout: 5s
+      start_period: 5s
+      retries: 5
 
   sonarr:
     # Sonarr 4.0.19 (the narrowest stable tag published upstream)

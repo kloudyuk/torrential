@@ -6,6 +6,9 @@ under [Apache-2.0](licenses/Apache-2.0.txt). The Sonarr and Radarr marks are sou
 from their official application repositories under
 [GPL-3.0](licenses/GPL-3.0.txt). The Seerr stacked mark is sourced from its official
 repository under the [MIT license](licenses/Seerr-MIT.txt).
+The GitHub mark in the dashboard footer is sourced from
+[Primer Octicons](https://github.com/primer/octicons) under its
+[MIT license](licenses/Primer-Octicons-MIT.txt).
 
 All product names, logos, and brands remain the property of their respective owners.
 Their inclusion identifies the linked applications and does not imply endorsement.

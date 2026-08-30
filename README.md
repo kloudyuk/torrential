@@ -14,8 +14,8 @@ It does four things:
   Compose deployment;
 - automatically prepares storage and configures the services to work together,
   including Transmission, Plex, Seerr, download paths, libraries, and notifications;
-- provides a local dashboard with links to every user-facing interface and their
-  current availability;
+- provides a local dashboard with links to every user-facing interface, Docker
+  health and uptime, and allowlisted restart controls;
 - forces public egress from the privacy-sensitive Transmission, Prowlarr, and Byparr
   services through the configured VPN, with a fail-closed firewall that prevents
   fallback to the host's normal internet connection.
@@ -27,7 +27,7 @@ Plex serves the completed media.
 
 | Service | Responsibility |
 | --- | --- |
-| Dashboard | Local launcher and availability view for the stack's web interfaces |
+| Dashboard | Local launcher with Docker health, uptime, and restart controls |
 | [Seerr](https://docs.seerr.dev/) | Unified discovery and request interface |
 | [Sonarr](https://sonarr.tv/) | TV acquisition, monitoring, import, and naming |
 | [Radarr](https://radarr.video/) | Movie acquisition, monitoring, import, and naming |
@@ -37,6 +37,7 @@ Plex serves the completed media.
 | [Plex Media Server](https://www.plex.tv/media-server-downloads/) | Media libraries and playback |
 | [Gluetun](https://github.com/qdm12/gluetun) | Required VPN routing and kill switch for Transmission, Prowlarr, and Byparr |
 | Bootstrap | Host-directory preparation, Plex authorization, and idempotent stack configuration |
+| Controller | Allowlisted Docker status and restart operations for the dashboard |
 
 Use Torrential only with content and sources you are legally authorized to access.
 
@@ -67,8 +68,8 @@ docker compose up -d
 docker compose logs --follow bootstrap
 ```
 
-Compose downloads missing service images, including Torrential's small prebuilt
-bootstrap image.
+Compose downloads missing service images, including Torrential's small prebuilt Go
+runtime image.
 
 On a fresh deployment, bootstrap prints one Plex authorization URL in its log and
 waits. Open it, sign in to Plex, and approve Torrential. Bootstrap
@@ -78,8 +79,10 @@ starts do not prompt again.
 
 Open the dashboard URL printed in the completion banner. It provides links to all six
 service interfaces, using whichever hostname or IP address opened the dashboard and
-each service's configured port. Every card also reports whether its application is
-currently responding.
+each service's configured port. Every card reports Docker health and uptime and can
+restart that service. The stack restart control restarts only the runtime services in
+dependency order; it leaves the dashboard, controller, and completed one-shot setup
+containers alone.
 
 Bootstrap creates the shared data directories, configures Transmission, connects the
 manager and indexer services, creates the Plex libraries, and configures Seerr with
@@ -96,8 +99,9 @@ Stop and remove the containers with `docker compose down`. After onboarding,
 ## Development
 
 Project-owned runtime code consists of the static HTML, CSS, and JavaScript dashboard
-in `dashboard/` and the bootstrap utility in `bootstrap/`. Bootstrap is a
-standard-library Go program and is the only part that requires compilation.
+in `dashboard/` and one standard-library Go program in `bootstrap/`. The Go image
+runs in separate filesystem-preparation, configuration-bootstrap, and long-running
+controller modes.
 
 ```sh
 cd bootstrap
@@ -110,6 +114,7 @@ deployments use the versioned multi-platform image published to GHCR.
 
 See [Architecture](docs/architecture.md), [Bootstrap](docs/bootstrap.md), and
 [Advanced operator setup](docs/advanced-setup.md) for the supported boundaries.
+Release history is maintained in the [changelog](CHANGELOG.md).
 
 ## License
 

@@ -37,8 +37,15 @@
       header {
         display: flex;
         align-items: center;
+        justify-content: space-between;
         gap: 1rem;
         margin-bottom: 2rem;
+      }
+
+      .brand {
+        display: flex;
+        align-items: center;
+        gap: 1rem;
       }
 
       .brand-icon {
@@ -49,14 +56,139 @@
 
       h1 {
         margin: 0;
+        color: #9997ff;
+        filter: drop-shadow(0 0 0.8rem rgba(139, 138, 255, 0.12));
         font-size: clamp(2rem, 5vw, 3.5rem);
+        font-weight: 780;
         letter-spacing: -0.05em;
+      }
+
+      .brand-torrent {
+        background: linear-gradient(105deg, #9997ff 0%, #70c9bd 100%);
+        background-clip: text;
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+      }
+
+      .brand-suffix {
+        color: #758097;
+        font-weight: 700;
       }
 
       header p {
         margin: 0.6rem 0 0;
         color: #98a2b7;
         font-size: 1rem;
+      }
+
+      button {
+        font: inherit;
+      }
+
+      .button {
+        padding: 0.62rem 0.9rem;
+        color: #dfe4ef;
+        background: #202a40;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 0.7rem;
+        cursor: pointer;
+        font-size: 0.78rem;
+        font-weight: 700;
+      }
+
+      .button:hover:not(:disabled) {
+        background: #2a3651;
+        border-color: rgba(139, 138, 255, 0.65);
+      }
+
+      .button:disabled {
+        cursor: not-allowed;
+        opacity: 0.45;
+      }
+
+      .restart-all {
+        padding: 0.78rem 1rem;
+        white-space: nowrap;
+      }
+
+      .operation {
+        display: none;
+        margin: -0.75rem 0 1.25rem;
+        padding: 0.8rem 1rem;
+        color: #b8c0d1;
+        background: rgba(19, 26, 42, 0.9);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 0.8rem;
+        font-size: 0.85rem;
+      }
+
+      .operation[data-visible="true"] { display: block; }
+      .operation[data-error="true"] { color: #ff858d; }
+
+      .confirm-dialog {
+        width: min(26rem, calc(100% - 2rem));
+        padding: 0;
+        overflow: hidden;
+        color: #f7f8fb;
+        background:
+          radial-gradient(circle at top right, rgba(139, 138, 255, 0.13), transparent 16rem),
+          #131a2b;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        border-radius: 1.25rem;
+        box-shadow: 0 2rem 6rem rgba(0, 0, 0, 0.55);
+      }
+
+      .confirm-dialog::backdrop {
+        background: rgba(5, 8, 15, 0.72);
+        backdrop-filter: blur(0.3rem);
+      }
+
+      .confirm-body {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 1rem;
+        padding: 1.5rem 1.5rem 1.25rem;
+      }
+
+      .confirm-icon {
+        display: grid;
+        width: 2.75rem;
+        height: 2.75rem;
+        place-items: center;
+        color: #b8b7ff;
+        background: rgba(139, 138, 255, 0.12);
+        border: 1px solid rgba(139, 138, 255, 0.24);
+        border-radius: 0.85rem;
+        font-size: 1.5rem;
+      }
+
+      .confirm-copy h2 {
+        margin: 0.1rem 0 0.45rem;
+        font-size: 1.2rem;
+      }
+
+      .confirm-copy p {
+        margin: 0;
+        color: #98a2b7;
+        font-size: 0.9rem;
+        line-height: 1.55;
+      }
+
+      .confirm-actions {
+        display: flex;
+        justify-content: flex-end;
+        gap: 0.65rem;
+        padding: 1rem 1.5rem 1.5rem;
+      }
+
+      .confirm-action {
+        color: #ffffff;
+        background: #6462e8;
+        border-color: #8583ff;
+      }
+
+      .confirm-action:hover:not(:disabled) {
+        background: #7472f2;
       }
 
       .services {
@@ -66,20 +198,43 @@
       }
 
       .service {
-        display: flex;
-        min-height: 15rem;
-        flex-direction: column;
-        align-items: center;
-        justify-content: space-between;
-        padding: 1.25rem;
+        position: relative;
+        min-height: 16rem;
         overflow: hidden;
-        color: inherit;
-        text-decoration: none;
         background: rgba(19, 26, 42, 0.9);
         border: 1px solid rgba(255, 255, 255, 0.08);
         border-radius: 1.25rem;
         box-shadow: 0 1.2rem 3rem rgba(0, 0, 0, 0.18);
-        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+        transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+      }
+
+      .service-link {
+        position: relative;
+        display: flex;
+        min-height: 16rem;
+        flex-direction: column;
+        align-items: center;
+        justify-content: space-between;
+        padding: 1.25rem 1.25rem 4rem;
+        color: inherit;
+        text-decoration: none;
+      }
+
+      .service-link::before {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        width: 10rem;
+        height: 10rem;
+        background: radial-gradient(circle, rgba(139, 138, 255, 0.075), transparent 68%);
+        content: "";
+        pointer-events: none;
+        transform: translate(-50%, -50%);
+      }
+
+      .service-link > * {
+        position: relative;
+        z-index: 1;
       }
 
       .service:hover {
@@ -88,7 +243,8 @@
         border-color: rgba(139, 138, 255, 0.6);
       }
 
-      .service:focus-visible {
+      .service-link:focus-visible,
+      .button:focus-visible {
         outline: 3px solid #8b8aff;
         outline-offset: 3px;
       }
@@ -126,22 +282,71 @@
         box-shadow: 0 0 0 0.2rem rgba(105, 115, 134, 0.14);
       }
 
-      .service[data-health-state="available"] .service-state {
+      .service[data-health-state="healthy"] .service-state,
+      .service[data-health-state="running"] .service-state {
         color: #62d6a7;
       }
 
-      .service[data-health-state="available"] .status-dot {
+      .service[data-health-state="healthy"] .status-dot,
+      .service[data-health-state="running"] .status-dot {
         background: #43c993;
         box-shadow: 0 0 0 0.2rem rgba(67, 201, 147, 0.14);
       }
 
-      .service[data-health-state="unavailable"] .service-state {
+      .service[data-health-state="starting"] .service-state,
+      .service[data-health-state="restarting"] .service-state,
+      .service[data-health-state="paused"] .service-state {
+        color: #f4c76b;
+      }
+
+      .service[data-health-state="starting"] .status-dot,
+      .service[data-health-state="restarting"] .status-dot,
+      .service[data-health-state="paused"] .status-dot {
+        background: #e9ae45;
+        box-shadow: 0 0 0 0.2rem rgba(233, 174, 69, 0.14);
+      }
+
+      .service[data-health-state="starting"],
+      .service[data-health-state="restarting"],
+      .service[data-health-state="paused"] {
+        background:
+          linear-gradient(135deg, rgba(233, 174, 69, 0.07), transparent 58%),
+          rgba(19, 26, 42, 0.9);
+        border-color: rgba(233, 174, 69, 0.3);
+        box-shadow:
+          0 1.2rem 3rem rgba(0, 0, 0, 0.18),
+          inset 0 0 0 1px rgba(233, 174, 69, 0.05);
+      }
+
+      .service[data-health-state="unhealthy"] .service-state,
+      .service[data-health-state="unavailable"] .service-state,
+      .service[data-health-state="exited"] .service-state,
+      .service[data-health-state="dead"] .service-state,
+      .service[data-health-state="missing"] .service-state {
         color: #ff858d;
       }
 
-      .service[data-health-state="unavailable"] .status-dot {
+      .service[data-health-state="unhealthy"] .status-dot,
+      .service[data-health-state="unavailable"] .status-dot,
+      .service[data-health-state="exited"] .status-dot,
+      .service[data-health-state="dead"] .status-dot,
+      .service[data-health-state="missing"] .status-dot {
         background: #f05f69;
         box-shadow: 0 0 0 0.2rem rgba(240, 95, 105, 0.14);
+      }
+
+      .service[data-health-state="unhealthy"],
+      .service[data-health-state="unavailable"],
+      .service[data-health-state="exited"],
+      .service[data-health-state="dead"],
+      .service[data-health-state="missing"] {
+        background:
+          linear-gradient(135deg, rgba(240, 95, 105, 0.065), transparent 58%),
+          rgba(19, 26, 42, 0.9);
+        border-color: rgba(240, 95, 105, 0.28);
+        box-shadow:
+          0 1.2rem 3rem rgba(0, 0, 0, 0.18),
+          inset 0 0 0 1px rgba(240, 95, 105, 0.045);
       }
 
       h2 {
@@ -159,7 +364,14 @@
         width: 6rem;
         height: 6rem;
         margin: 1.25rem 0;
+        filter: drop-shadow(0 0.7rem 1.1rem rgba(0, 0, 0, 0.24));
         object-fit: contain;
+        transition: filter 180ms ease, transform 180ms ease;
+      }
+
+      .service:hover img {
+        filter: drop-shadow(0 0.8rem 1.25rem rgba(79, 95, 155, 0.28));
+        transform: translateY(-0.12rem) scale(1.025);
       }
 
       .address {
@@ -174,10 +386,60 @@
         white-space: nowrap;
       }
 
+      .service-controls {
+        position: absolute;
+        right: 1.15rem;
+        bottom: 1rem;
+        left: 1.15rem;
+        z-index: 2;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 0.75rem;
+      }
+
+      .uptime {
+        color: #8993a8;
+        font-size: 0.75rem;
+        font-weight: 600;
+      }
+
+      footer {
+        margin-top: 2rem;
+        text-align: center;
+      }
+
+      footer a {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.4rem;
+        color: #697386;
+        font-size: 0.78rem;
+        text-decoration: none;
+        transition: color 160ms ease;
+      }
+
+      footer svg {
+        width: 0.9rem;
+        height: 0.9rem;
+        fill: currentColor;
+      }
+
+      footer a:hover {
+        color: #aaa8ff;
+      }
+
+      footer a:focus-visible {
+        outline: 2px solid #8b8aff;
+        outline-offset: 0.3rem;
+        border-radius: 0.2rem;
+      }
+
       @media (max-width: 48rem) {
         .services {
           grid-template-columns: repeat(2, minmax(0, 1fr));
         }
+
       }
 
       @media (max-width: 32rem) {
@@ -186,12 +448,22 @@
           padding: 2rem 0;
         }
 
+        header {
+          align-items: stretch;
+          flex-direction: column;
+        }
+
+        .restart-all {
+          width: 100%;
+        }
+
         .services {
           grid-template-columns: 1fr;
         }
 
-        .service {
-          min-height: 12rem;
+        .service,
+        .service-link {
+          min-height: 14rem;
         }
       }
     </style>
@@ -199,12 +471,17 @@
   <body>
     <main>
       <header>
-        <img class="brand-icon" src="/icons/torrential.svg" alt="">
-        <div>
-          <h1>Torrential</h1>
-          <p>Your local media stack.</p>
+        <div class="brand">
+          <img class="brand-icon" src="/icons/torrential.svg" alt="">
+          <div>
+            <h1><span class="brand-torrent">Torrent</span><span class="brand-suffix">ial</span></h1>
+            <p>Your local media stack.</p>
+          </div>
         </div>
+        <button class="button restart-all" type="button" disabled>Restart stack</button>
       </header>
+
+      <div class="operation" role="status" aria-live="polite"></div>
 
       <section class="services" aria-label="Media services">
         <a class="service" data-port="${SEERR_PORT}" data-health="seerr" data-health-state="checking" target="_blank" rel="noreferrer">
@@ -279,49 +556,228 @@
           <p class="address"></p>
         </a>
       </section>
+
+
+      <footer>
+        <a href="https://github.com/kloudyuk/torrential" target="_blank" rel="noreferrer">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0a8 8 0 0 0-2.53 15.59c.4.07.55-.18.55-.39v-1.49c-2.23.49-2.7-.95-2.7-.95-.37-.93-.9-1.18-.9-1.18-.72-.5.06-.49.06-.49.8.06 1.22.82 1.22.82.71 1.22 1.87.87 2.32.67.07-.52.28-.87.5-1.07-1.78-.2-3.65-.89-3.65-3.96 0-.88.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.22 2.2.82A7.6 7.6 0 0 1 8 3.83a7.6 7.6 0 0 1 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.08-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48v2.22c0 .21.15.46.55.39A8 8 0 0 0 8 0Z"/></svg>
+          <span>View Torrential on GitHub ↗</span>
+        </a>
+      </footer>
     </main>
+
+    <dialog class="confirm-dialog" aria-labelledby="confirm-title" aria-describedby="confirm-message">
+      <form method="dialog">
+        <div class="confirm-body">
+          <span class="confirm-icon" aria-hidden="true">↻</span>
+          <div class="confirm-copy">
+            <h2 id="confirm-title"></h2>
+            <p id="confirm-message"></p>
+          </div>
+        </div>
+        <div class="confirm-actions">
+          <button class="button" type="submit" value="cancel">Cancel</button>
+          <button class="button confirm-action" type="submit" value="confirm">Restart</button>
+        </div>
+      </form>
+    </dialog>
+
     <script>
       const host = window.location.hostname.includes(":")
         ? "[" + window.location.hostname + "]"
         : window.location.hostname;
+      const restartAllButton = document.querySelector(".restart-all");
+      const operationElement = document.querySelector(".operation");
+      const confirmDialog = document.querySelector(".confirm-dialog");
+      const confirmTitle = document.querySelector("#confirm-title");
+      const confirmMessage = document.querySelector("#confirm-message");
+      let controllerAvailable = false;
+      let operationRunning = false;
+      let statusTimer;
 
-      document.querySelectorAll(".service").forEach((service) => {
-        const origin = "http://" + host + ":" + service.dataset.port;
-        const path = service.dataset.path || "";
-        service.href = origin + path;
-        service.querySelector(".address").textContent = host + ":" + service.dataset.port + path;
+      document.querySelectorAll("a.service").forEach((link) => {
+        const card = document.createElement("article");
+        card.className = "service";
+        card.dataset.service = link.dataset.health;
+        card.dataset.healthState = "starting";
+        link.replaceWith(card);
+        link.className = "service-link";
+        card.appendChild(link);
+        const controls = document.createElement("div");
+        controls.className = "service-controls";
+        controls.innerHTML = '<span class="uptime">—</span><button class="button restart-service" type="button" disabled>Restart</button>';
+        card.appendChild(controls);
+        const origin = "http://" + host + ":" + link.dataset.port;
+        const servicePath = link.dataset.path || "";
+        link.href = origin + servicePath;
+        link.querySelector(".address").textContent = host + ":" + link.dataset.port + servicePath;
+        controls.querySelector("button").addEventListener("click", () => restartService(card));
       });
 
-      const healthServices = Array.from(document.querySelectorAll(".service[data-health]"));
+      const services = Array.from(document.querySelectorAll("article.service"));
+      restartAllButton.addEventListener("click", restartAll);
 
-      async function checkHealth(service) {
-        const controller = new AbortController();
-        const timeout = window.setTimeout(() => controller.abort(), 6000);
+      const labels = {
+        healthy: "Healthy",
+        running: "Running",
+        starting: "Starting",
+        restarting: "Restarting",
+        unhealthy: "Unhealthy",
+        exited: "Stopped",
+        dead: "Stopped",
+        paused: "Paused",
+        missing: "Missing",
+        unavailable: "Unavailable",
+      };
 
+      function updateService(service, runtime) {
+        const state = runtime.state || "unavailable";
+        const displayState = state === "running" ? (runtime.health || "running") : state;
+        service.dataset.healthState = displayState;
+        service.dataset.startedAt = runtime.startedAt || "";
+        service.querySelector(".status-label").textContent = labels[displayState] || "Unknown";
+        updateUptime(service);
+      }
+
+      function markRestarting(service) {
+        service.dataset.healthState = "restarting";
+        service.dataset.startedAt = "";
+        service.querySelector(".status-label").textContent = labels.restarting;
+        service.querySelector(".uptime").textContent = "—";
+      }
+
+      function updateUptime(service) {
+        const startedAt = Date.parse(service.dataset.startedAt || "");
+        const uptime = service.querySelector(".uptime");
+        if (!Number.isFinite(startedAt) || ["exited", "dead", "missing", "unavailable"].includes(service.dataset.healthState)) {
+          uptime.textContent = "—";
+          return;
+        }
+        const seconds = Math.max(0, Math.floor((Date.now() - startedAt) / 1000));
+        const days = Math.floor(seconds / 86400);
+        const hours = Math.floor((seconds % 86400) / 3600);
+        const minutes = Math.floor((seconds % 3600) / 60);
+        const remainingSeconds = seconds % 60;
+        if (days) uptime.textContent = "Up " + days + "d " + hours + "h";
+        else if (hours) uptime.textContent = "Up " + hours + "h " + minutes + "m";
+        else if (minutes) uptime.textContent = "Up " + minutes + "m " + remainingSeconds + "s";
+        else uptime.textContent = "Up " + seconds + "s";
+      }
+
+      function updateControls() {
+        restartAllButton.disabled = !controllerAvailable || operationRunning;
+        restartAllButton.textContent = operationRunning ? "Restarting…" : "Restart stack";
+        services.forEach((service) => {
+          service.querySelector(".restart-service").disabled = !controllerAvailable || operationRunning;
+        });
+      }
+
+      function updateOperation(operation) {
+        operationRunning = Boolean(operation && operation.running);
+        const visible = Boolean(operation && operation.error);
+        operationElement.dataset.visible = String(visible);
+        operationElement.dataset.error = String(visible);
+        operationElement.textContent = visible ? operation.message + ": " + operation.error : "";
+      }
+
+      function scheduleStatusRefresh(delay) {
+        window.clearTimeout(statusTimer);
+        statusTimer = window.setTimeout(refreshStatus, delay);
+      }
+
+      async function refreshStatus() {
         try {
-          const response = await fetch("/health/" + service.dataset.health, {
-            cache: "no-store",
-            signal: controller.signal,
-          });
-          if (!response.ok) {
-            throw new Error("Health endpoint returned " + response.status);
+          const response = await fetch("/api/status", { cache: "no-store" });
+          if (!response.ok) throw new Error("Controller returned " + response.status);
+          const payload = await response.json();
+          controllerAvailable = true;
+          updateOperation(payload.operation);
+          const statuses = new Map(payload.services.map((runtime) => [runtime.service, runtime]));
+          services.forEach((service) => updateService(service, statuses.get(service.dataset.service) || { state: "missing" }));
+          if (payload.operation && payload.operation.running && payload.operation.service) {
+            const restarting = services.find((service) => service.dataset.service === payload.operation.service);
+            if (restarting) markRestarting(restarting);
           }
-          service.dataset.healthState = "available";
-          service.querySelector(".status-label").textContent = "Available";
         } catch (_error) {
-          service.dataset.healthState = "unavailable";
-          service.querySelector(".status-label").textContent = "Unavailable";
-        } finally {
-          window.clearTimeout(timeout);
+          controllerAvailable = false;
+          operationRunning = false;
+          services.forEach((service) => {
+            service.dataset.healthState = "unavailable";
+            service.querySelector(".status-label").textContent = "Controller offline";
+            service.querySelector(".uptime").textContent = "—";
+          });
+        }
+        updateControls();
+        scheduleStatusRefresh(operationRunning ? 1000 : 10000);
+      }
+
+      async function requestRestart(target, service) {
+        if (service) markRestarting(service);
+        operationRunning = true;
+        operationElement.dataset.visible = "false";
+        operationElement.textContent = "";
+        updateControls();
+        window.clearTimeout(statusTimer);
+        const response = await fetch(target, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "X-Torrential-Action": "restart" },
+          body: "{}",
+        });
+        if (!response.ok) {
+          let message = "Restart request failed";
+          try {
+            const payload = await response.json();
+            if (payload.error) message = payload.error;
+          } catch (_error) {
+          }
+          throw new Error(message);
+        }
+        scheduleStatusRefresh(250);
+      }
+
+      function confirmRestart(title, message) {
+        confirmTitle.textContent = title;
+        confirmMessage.textContent = message;
+        confirmDialog.returnValue = "cancel";
+        confirmDialog.showModal();
+        return new Promise((resolve) => {
+          confirmDialog.addEventListener("close", () => {
+            resolve(confirmDialog.returnValue === "confirm");
+          }, { once: true });
+        });
+      }
+
+      async function restartService(service) {
+        const name = service.querySelector("h2").textContent;
+        const confirmed = await confirmRestart(
+          "Restart " + name + "?",
+          name + " will be unavailable briefly while its container restarts."
+        );
+        if (!confirmed) return;
+        try {
+          await requestRestart("/api/restart/" + encodeURIComponent(service.dataset.service), service);
+        } catch (error) {
+          window.alert(error.message);
+          await refreshStatus();
         }
       }
 
-      function checkAllHealth() {
-        healthServices.forEach(checkHealth);
+      async function restartAll() {
+        const confirmed = await confirmRestart(
+          "Restart the media stack?",
+          "Downloads, requests, and playback will be interrupted briefly. The VPN will recover before routed services restart."
+        );
+        if (!confirmed) return;
+        try {
+          await requestRestart("/api/restart-all");
+        } catch (error) {
+          window.alert(error.message);
+          await refreshStatus();
+        }
       }
 
-      checkAllHealth();
-      window.setInterval(checkAllHealth, 30000);
+      refreshStatus();
+      window.setInterval(() => services.forEach(updateUptime), 1000);
     </script>
   </body>
 </html>

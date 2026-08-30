@@ -148,6 +148,25 @@ outage from another networking failure. Inspect the configuration with
 `docker compose config`; the routed services must not gain independent networks or
 ports that conflict with `network_mode: "service:gluetun"`.
 
+## Docker control boundary
+
+The dashboard's health, uptime, and restart features use a project-owned controller
+with the Docker socket mounted. Docker socket access is inherently privileged: a bug
+in any socket client can potentially affect the host beyond the intended API. To
+keep that exposure narrow, the controller has no published port, the dashboard
+proxies only `/api/`, container lookup is restricted to the configured Compose
+project, and restart targets are a fixed allowlist. The controller container also
+runs read-only with all Linux capabilities dropped, although those settings do not
+make Docker socket access unprivileged.
+
+The web controls are designed for a trusted home LAN and do not authenticate users.
+Same-origin and explicit-header checks reduce browser-based cross-site requests, but
+any client that can reach the dashboard can issue a restart deliberately. Do not
+publish the dashboard or any other stack port to the public internet. Operators who
+do not accept this trust model should bind the interfaces to loopback with
+`WEB_BIND_ADDRESS=127.0.0.1` and access them through a separately authenticated
+private channel.
+
 ## References
 
 - [Docker Desktop networking](https://docs.docker.com/desktop/features/networking/)

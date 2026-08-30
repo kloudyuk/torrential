@@ -7,19 +7,37 @@ import (
 )
 
 func main() {
-	configuration, err := loadConfig(os.LookupEnv)
-	if err == nil && len(os.Args) == 2 && os.Args[1] == "prepare" {
-		err = prepareDirectories(configuration, "/config")
+	component := "bootstrap"
+	var err error
+	switch {
+	case len(os.Args) == 1:
+		var configuration config
+		configuration, err = loadConfig(os.LookupEnv)
+		if err == nil {
+			err = bootstrap(configuration)
+		}
+	case len(os.Args) == 2 && os.Args[1] == "prepare":
+		var configuration config
+		configuration, err = loadConfig(os.LookupEnv)
+		if err == nil {
+			err = prepareDirectories(configuration, "/config")
+		}
 		if err == nil {
 			logMessage("host directories ready")
 		}
-	} else if err == nil && len(os.Args) == 1 {
-		err = bootstrap(configuration)
-	} else if err == nil {
-		err = fmt.Errorf("usage: bootstrap [prepare]")
+	case len(os.Args) == 2 && os.Args[1] == "controller":
+		component = "controller"
+		if err = controllerSocketExists(os.LookupEnv); err == nil {
+			err = runController(os.LookupEnv)
+		}
+	case len(os.Args) == 2 && os.Args[1] == "probe":
+		component = "controller"
+		err = probeController()
+	default:
+		err = fmt.Errorf("usage: bootstrap [prepare|controller|probe]")
 	}
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[bootstrap] failed: %v\n", err)
+		fmt.Fprintf(os.Stderr, "[%s] failed: %v\n", component, err)
 		os.Exit(1)
 	}
 }

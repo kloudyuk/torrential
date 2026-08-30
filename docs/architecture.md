@@ -4,7 +4,7 @@ Torrential is the complete deployment described in this document.
 
 ```text
 User
-  +--> Dashboard
+  +--> Dashboard --> Controller --> Docker status/restarts
   +--> Seerr --> Sonarr/Radarr --> Transmission --> /data/torrents
                    ^                                      |
                    |                                      v
@@ -19,7 +19,9 @@ User
 The bootstrap image first runs as a one-shot filesystem init service. After it
 succeeds, the same image runs once as the configuration coordinator. The coordinator
 waits for the other services, performs Plex account authorization when needed,
-configures fixed paths, connections, and libraries, and exits.
+configures fixed paths, connections, and libraries, and exits. After that succeeds,
+the same image remains running in controller mode to supply the dashboard with
+allowlisted Docker status and restart operations.
 Gluetun supplies the only network namespace available to Transmission,
 Prowlarr, and Byparr.
 
@@ -27,7 +29,8 @@ Prowlarr, and Byparr.
 
 | Concern | Owner |
 | --- | --- |
-| Local service navigation and availability | Dashboard |
+| Local navigation and presentation of container status, uptime, and controls | Dashboard |
+| Docker inspection and allowlisted container restarts | Controller |
 | Discovery, requests, approvals, and request status | Seerr |
 | TV metadata, monitoring, release choice, import, and naming | Sonarr |
 | Movie metadata, monitoring, release choice, import, and naming | Radarr |
@@ -87,10 +90,22 @@ these published ports may be exposed directly to the public internet. Set
 `WEB_BIND_ADDRESS=127.0.0.1` to restrict every interface to the host instead.
 Dashboard links preserve the hostname or IP address used to open it. Plex's
 advertised server URL uses the operator-supplied `TORRENTIAL_HOST` and `PLEX_PORT`.
-The dashboard proxies fixed, read-only readiness requests to its six linked services
-and displays application availability without mounting the Docker socket. Its service
-marks and Torrential favicon are bundled SVG assets, so they remain sharp and do not
-depend on another service or an internet connection to render.
+The dashboard proxies a fixed same-origin API to the controller and displays the
+Docker-reported state, health, and start time of its six linked services. Nginx does
+not mount the Docker socket. The controller does mount it, is not published on a host
+port, and limits operations to inspecting this Compose project and restarting a
+fixed service allowlist. Its service marks and Torrential favicon are bundled SVG
+assets, so they remain sharp and do not depend on another service or an internet
+connection to render. The browser derives uptime from Docker's start timestamp and
+updates its local display once per second without polling Docker more frequently.
+
+Dashboard restart requests require a same-origin browser request and an explicit
+confirmation header. These checks prevent accidental cross-site actions, but they
+are not user authentication: anyone with trusted-LAN access to the dashboard can
+restart its services. An individual action restarts only its card's container. The
+stack action restarts Gluetun first and waits for VPN health, then restarts
+Transmission, Prowlarr, and Byparr, followed by Sonarr, Radarr, Seerr, and Plex. It
+does not restart the dashboard, controller, init, or bootstrap containers.
 
 Transmission, Prowlarr, and Byparr unconditionally share Gluetun's network
 namespace and have no independent fallback route. Gluetun publishes the Transmission

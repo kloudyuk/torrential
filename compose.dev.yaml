@@ -8,3 +8,8 @@ services:
     build:
       context: ./bootstrap
     image: torrential-bootstrap:dev
+
+  controller:
+    build:
+      context: ./bootstrap
+    image: torrential-bootstrap:dev

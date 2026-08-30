@@ -1,9 +1,9 @@
 # Bootstrap
 
-Bootstrap is the project-owned configuration utility. It is a standard-library Go
-program contained in `bootstrap/`. Its multi-stage Docker build produces a static
-binary in a minimal `scratch` image. Normal deployments pull a versioned ARM64/AMD64
-image from GitHub Container Registry rather than compiling it locally.
+The `bootstrap/` directory contains Torrential's project-owned standard-library Go
+runtime. Its multi-stage Docker build produces one static binary in a minimal
+`scratch` image. Normal deployments pull a versioned ARM64/AMD64 image from GitHub
+Container Registry rather than compiling it locally.
 
 Compose first runs the bootstrap image as a one-shot `init` service in `prepare`
 mode. It creates every bind-mounted configuration and data directory with the
@@ -16,6 +16,13 @@ network namespace so the unclaimed-server authorization is local, waits up to fi
 minutes for generated configuration files and service APIs, configures the bundled
 connections and libraries, and exits. The prepared paths include the Sonarr and
 Radarr completed-download categories.
+
+After successful configuration, Compose runs the image in long-lived `controller`
+mode. The controller reads this Compose project's container status through the Docker
+socket and exposes an internal, fixed API for dashboard health, uptime, and restart
+controls. It does not repeat bootstrap work. The modes remain separate so setup has
+a clear success or failure exit status while runtime controls can restart
+independently.
 
 ## Inputs
 
@@ -80,9 +87,10 @@ docker compose -f compose.yaml -f compose.dev.yaml logs --follow bootstrap
 Release tags in `vMAJOR.MINOR.PATCH` form run
 `.github/workflows/publish-bootstrap.yaml`, which publishes multi-platform
 `linux/amd64` and `linux/arm64` images with an immutable full-version tag such as
-`v0.3.1`. `compose.yaml` references that exact tag, and the workflow verifies both
-bootstrap services before publishing. Release tags must not be reused; the workflow
-refuses to replace an image that already exists.
+`v1.0.0`. `compose.yaml` references that exact tag, and the workflow verifies the
+`init`, `bootstrap`, and `controller` services before publishing. Release tags must
+not be reused; the workflow refuses to replace an image that already exists. After
+the image is published, the workflow creates a GitHub Release with generated notes.
 
 The GHCR package is public so Torrential deployments can pull it anonymously. Preserve
 that visibility when changing package settings.
