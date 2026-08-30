@@ -279,10 +279,10 @@ services:
         restart: true
     healthcheck:
       test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8191/health"]
-      interval: 30s
-      timeout: 5s
+      interval: 5m
+      timeout: 30s
       start_period: 20s
-      retries: 5
+      retries: 3
 
   transmission:
     # Transmission 4.1.3 (the narrowest stable tag published upstream)
