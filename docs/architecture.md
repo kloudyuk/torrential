@@ -27,13 +27,14 @@ Prowlarr, and Byparr.
 
 | Concern | Owner |
 | --- | --- |
-| Local service navigation | Dashboard |
+| Local service navigation and availability | Dashboard |
 | Discovery, requests, approvals, and request status | Seerr |
 | TV metadata, monitoring, release choice, import, and naming | Sonarr |
 | Movie metadata, monitoring, release choice, import, and naming | Radarr |
 | Indexers and manager synchronization | Prowlarr |
 | Browser challenges for explicitly tagged indexers | Byparr |
 | Torrent transfer state and files | Transmission |
+| VPN tunnel, routed-service network namespace, and fail-closed firewall | Gluetun |
 | Library indexing, playback, and media-server users | Plex |
 | Plex first-run state | Plex startup hook |
 | Host-directory ownership, Plex authorization, locale defaults, stable paths, libraries, and internal service connections | Bootstrap |
@@ -98,6 +99,10 @@ Radarr, Seerr, and Plex remain on the normal Compose network. The coordinator sh
 Plex's network namespace only so the initial claim request originates from Plex
 loopback; it still has normal Compose-network access and never inherits acquisition
 VPN routing. Plex remains directly reachable by LAN clients.
+
+All public egress from Transmission, Prowlarr, and Byparr therefore passes through
+Gluetun's VPN tunnel. If the tunnel is unavailable, Gluetun's firewall blocks their
+public egress instead of allowing traffic to fall back to the host connection.
 
 The aliases mean other services still use `transmission:9091` and `prowlarr:9696`;
 those names resolve to Gluetun's namespace. Prowlarr reaches Byparr through

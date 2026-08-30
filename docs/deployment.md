@@ -81,12 +81,11 @@ certificates or HTTPS termination.
 On a fresh deployment, bootstrap prints one `app.plex.tv` authorization URL in the
 followed coordinator log. Open it, sign in to the Plex account that will own the
 server, and approve Torrential. The coordinator continues automatically; no
-credential needs to be copied. The
-authorization request expires after 15 minutes. Run `docker compose up -d` again to
+credential needs to be copied. The authorization request expires after 15 minutes.
+Run `docker compose up -d` again to
 ensure the stack is running, then retry the coordinator directly with
-`docker compose run --rm --no-deps bootstrap`. Plex's page can show a generic
-completion error after successful approval; the bootstrap output is authoritative.
-Existing completed deployments skip this step.
+`docker compose run --rm --no-deps bootstrap`. Existing completed deployments skip
+this step.
 
 Plex startup and bootstrap perform these convergent operations:
 

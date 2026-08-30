@@ -67,7 +67,7 @@ services:
 
   init:
     # One-shot filesystem initialization using Torrential bootstrap 0.3.
-    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.3.0
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.3.1
     restart: "no"
     user: "0:0"
     command: ["prepare"]
@@ -85,7 +85,7 @@ services:
 
   bootstrap:
     # One-shot configuration coordinator using Torrential bootstrap 0.3.
-    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.3.0
+    image: ghcr.io/kloudyuk/torrential-bootstrap:v0.3.1
     restart: "no"
     user: "0:0"
     network_mode: "service:plex"

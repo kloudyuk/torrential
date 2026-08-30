@@ -8,14 +8,17 @@ ready-to-use TV and movie acquisition stack. It removes the repetitive work of
 installing each service separately, connecting them to one another, and remembering
 where every interface lives.
 
-It does three things:
+It does four things:
 
 - brings the \*arr applications and their supporting services together in one Docker
   Compose deployment;
 - automatically prepares storage and configures the services to work together,
   including Transmission, Plex, Seerr, download paths, libraries, and notifications;
 - provides a local dashboard with links to every user-facing interface and their
-  current availability.
+  current availability;
+- forces public egress from the privacy-sensitive Transmission, Prowlarr, and Byparr
+  services through the configured VPN, with a fail-closed firewall that prevents
+  fallback to the host's normal internet connection.
 
 Once running, Seerr is the main place to discover and request TV shows and movies.
 Sonarr and Radarr manage acquisition and organization, Prowlarr supplies their
@@ -24,7 +27,7 @@ Plex serves the completed media.
 
 | Service | Responsibility |
 | --- | --- |
-| Dashboard | Local launcher for the stack's web interfaces |
+| Dashboard | Local launcher and availability view for the stack's web interfaces |
 | [Seerr](https://docs.seerr.dev/) | Unified discovery and request interface |
 | [Sonarr](https://sonarr.tv/) | TV acquisition, monitoring, import, and naming |
 | [Radarr](https://radarr.video/) | Movie acquisition, monitoring, import, and naming |
@@ -70,9 +73,8 @@ bootstrap image.
 On a fresh deployment, bootstrap prints one Plex authorization URL in its log and
 waits. Open it, sign in to Plex, and approve Torrential. Bootstrap
 uses that single authorization to claim Plex and create Seerr's administrator; there
-is no token to copy or store. Follow the terminal output after approval; Plex's
-authorization page can display a generic completion error even after approval
-succeeds. Subsequent starts do not prompt again.
+is no token to copy or store. Follow the terminal output after approval. Subsequent
+starts do not prompt again.
 
 Open the dashboard URL printed in the completion banner. It provides links to all six
 service interfaces, using whichever hostname or IP address opened the dashboard and
@@ -93,8 +95,9 @@ Stop and remove the containers with `docker compose down`. After onboarding,
 
 ## Development
 
-The bootstrap utility is the project's only compiled component. It is a
-standard-library Go program contained entirely in `bootstrap/`.
+Project-owned runtime code consists of the static HTML, CSS, and JavaScript dashboard
+in `dashboard/` and the bootstrap utility in `bootstrap/`. Bootstrap is a
+standard-library Go program and is the only part that requires compilation.
 
 ```sh
 cd bootstrap
